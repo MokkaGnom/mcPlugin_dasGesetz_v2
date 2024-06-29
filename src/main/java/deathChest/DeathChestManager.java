@@ -1,9 +1,20 @@
 package deathChest;
 
 //Bukkit-Event:
+
+import manager.ManagedPlugin;
+import manager.Manager;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Creeper;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.TNTPrimed;
+import org.bukkit.entity.Wither;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
@@ -15,34 +26,23 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.Bukkit;
-//Bukkit:
-import org.bukkit.Material;
-import org.bukkit.entity.Creeper;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.TNTPrimed;
-import org.bukkit.entity.Wither;
-import org.bukkit.block.Block;
-//Java:
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.ArrayList;
 
-import manager.Manager;
 
-public class DeathChestManager implements Listener
+public class DeathChestManager implements Listener, ManagedPlugin
 {
-	private Manager manager;
 	private long timer;
 	private boolean dropItems;
 	private List<DeathChest> deathChests;
 
-	public DeathChestManager(Manager manager, long timerInTicks, boolean dropItems)
+	public DeathChestManager()
 	{
-		this.manager = manager;
-		this.timer = timerInTicks;
-		this.dropItems = dropItems;
-		deathChests = new ArrayList<DeathChest>();
+		this.timer = Manager.getInstance().getConfig().getInt("DeathChest.DespawnInTicks");
+		this.dropItems = Manager.getInstance().getConfig().getBoolean("DeathChest.DespawnDropping");
+		deathChests = new ArrayList<>();
 	}
 
 	/** Sends a message to a player */
@@ -93,7 +93,7 @@ public class DeathChestManager implements Listener
 		Player p = event.getEntity();
 		if (p.hasPermission("dg.deathChestPermission"))
 		{
-			DeathChest dc = new DeathChest(this, p, event.getDrops(), manager, timer, dropItems);
+			DeathChest dc = new DeathChest(this, p, event.getDrops(), Manager.getInstance(), timer, dropItems);
 			deathChests.add(dc);
 			if (dc.equals(deathChests.get(deathChests.size() - 1)))
 				event.getDrops().clear();
@@ -288,5 +288,31 @@ public class DeathChestManager implements Listener
 	{
 		if ((isInventoryDeathChest(event.getSource()) && !event.getDestination().getType().equals(InventoryType.PLAYER)) || isInventoryDeathChest(event.getDestination()))
 			event.setCancelled(true);
+	}
+
+	@Override
+	public boolean onEnable ()
+	{
+		Manager.getInstance().getServer().getPluginManager().registerEvents(this, Manager.getInstance());
+		return true;
+	}
+
+	@Override
+	public void onDisable ()
+	{
+		removeAllDeathChests();
+	}
+
+	@Override
+	public String getName ()
+	{
+		return "DeathChest";
+	}
+
+	@Override
+	public void createDefaultConfig (FileConfiguration config)
+	{
+		config.addDefault("DeathChest.DespawnInTicks", 12000);
+		config.addDefault("DeathChest.DespawnDropping", true);
 	}
 }

@@ -8,8 +8,9 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 
-public class dasGesetz implements TabExecutor
+public class DasGesetz implements TabExecutor
 {
+	public static final String COMMAND = "dasGesetz";
 
 	private String[] dasGesetzStr = { "(1) Die Würde eines Spielers ist unantastbar.\n",
 			"(2) Niemand darf einen anderen Spieler, ohne ausdrückliche Erlaubnis des betroffenen oder des Gerichtes, töten.\n",

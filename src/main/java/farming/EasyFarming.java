@@ -1,18 +1,20 @@
 package farming;
 
-// Bukkit:
+import manager.ManagedPlugin;
+import manager.Manager;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
-//Java:
+
 import java.util.Arrays;
 import java.util.List;
 
-public class EasyFarming implements Listener
+public class EasyFarming implements Listener, ManagedPlugin
 {
 	private static final List<Material> allowedBlocks = Arrays.asList(Material.BEETROOTS, Material.WHEAT, Material.CARROTS, Material.POTATOES);
 
@@ -39,5 +41,30 @@ public class EasyFarming implements Listener
 				}
 			}
 		}
+	}
+
+	@Override
+	public boolean onEnable ()
+	{
+		Manager.getInstance().getServer().getPluginManager().registerEvents(this, Manager.getInstance());
+		return true;
+	}
+
+	@Override
+	public void onDisable ()
+	{
+
+	}
+
+	@Override
+	public String getName ()
+	{
+		return "EasyFarming";
+	}
+
+	@Override
+	public void createDefaultConfig (FileConfiguration config)
+	{
+
 	}
 }

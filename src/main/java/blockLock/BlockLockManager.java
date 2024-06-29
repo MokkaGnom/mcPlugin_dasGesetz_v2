@@ -1,6 +1,9 @@
 package blockLock;
 
 // Bukkit-Event:
+import manager.ManagedPlugin;
+import manager.Manager;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -21,8 +24,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.inventory.Inventory;
-
-import manager.Manager;
+import org.bukkit.plugin.java.JavaPlugin;
 
 // Java:
 import java.io.File;
@@ -35,7 +37,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-public class BlockLockManager implements Listener
+public class BlockLockManager implements Listener, ManagedPlugin
 {
 	public static final List<Material> lockableBlocks = Arrays.asList(Material.ACACIA_DOOR, Material.ACACIA_TRAPDOOR, Material.BIRCH_DOOR, Material.BIRCH_TRAPDOOR, Material.CRIMSON_DOOR,
 			Material.CRIMSON_TRAPDOOR, Material.DARK_OAK_DOOR, Material.DARK_OAK_TRAPDOOR, Material.IRON_DOOR, Material.IRON_TRAPDOOR, Material.JUNGLE_DOOR, Material.JUNGLE_TRAPDOOR,
@@ -45,14 +47,12 @@ public class BlockLockManager implements Listener
 			Material.JUNGLE_FENCE_GATE, Material.SPRUCE_FENCE_GATE, Material.WARPED_FENCE_GATE, Material.CRIMSON_FENCE_GATE, Material.DARK_OAK_FENCE_GATE, Material.MANGROVE_FENCE_GATE);
 
 	public static final String blockLockKey = "BlockLock";
-	private Manager manager;
 	private File saveFile;
 	private List<BlockLockUser> players;
 
-	public BlockLockManager(Manager manager)
+	public BlockLockManager()
 	{
-		this.manager = manager;
-		this.saveFile = new File(this.manager.getDataFolder(), "BlockLock.bin");
+		this.saveFile = new File(Manager.getInstance().getDataFolder(), "BlockLock.bin");
 		players = new ArrayList<BlockLockUser>();
 	}
 
@@ -449,11 +449,6 @@ public class BlockLockManager implements Listener
 		return blocks;
 	}
 
-	public Manager getManager()
-	{
-		return manager;
-	}
-
 	/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 	// Protecting Block:
 
@@ -550,4 +545,40 @@ public class BlockLockManager implements Listener
 		}
 	}
 
+	@Override
+	public boolean onEnable ()
+	{
+		BlockLockCommands blockLockCommands = new BlockLockCommands(this);
+		Manager.getInstance().getServer().getPluginManager().registerEvents(this, Manager.getInstance());
+		loadFromFile();
+		try
+		{
+			Manager.getInstance().getCommand(BlockLockCommands.command).setExecutor(blockLockCommands);
+			Manager.getInstance().getCommand(BlockLockCommands.command).setTabCompleter(blockLockCommands);
+		}
+		catch (NullPointerException e)
+		{
+			Manager.getInstance().sendErrorMessage(e.getMessage());
+			onDisable();
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public void onDisable ()
+	{
+		saveToFile();
+	}
+
+	@Override
+	public String getName ()
+	{
+		return "BlockLock";
+	}
+
+	@Override
+	public void createDefaultConfig (FileConfiguration config)
+	{
+	}
 }

@@ -1,7 +1,7 @@
-main: mokkagnom.dasgesetz.Main
+main: manager.Manager
 name: dasGesetz
 version: 3.6.2
-api-version: 1.20
+api-version: 1.21
 author: MokkaGnom
 description: Das Gesetz. Timber, EasyFarming, DeathChest, BlockLock, Home, Ping
 commands:
@@ -13,19 +13,19 @@ commands:
       - dgm
    dasGesetz:
       description: Gibt das Gesetz im Chat aus
-      usage: /dasGesetz [Artikel]
+      usage: /DasGesetz [Artikel]
       permission: dg.dasGesetzPermission
       aliases:
       - dg
    weatherClear:
       description: Sets weather to clear
-      usage: /weatherClear
+      usage: /WeatherClear
       permission: dg.weatherClearPermission
       aliases:
       - wc
    coords:
       description: Return coordinates of player
-      usage: /coords <Player>
+      usage: /Coords <Player>
       permission: dg.coordsPermission
       aliases:
       - co
@@ -49,7 +49,7 @@ commands:
       - p
 permissions:
    dg.dgManagerPermission:
-      description: Allows a Player to use the Manager
+      description: Allows a Player to use the manager.Manager
       default: op
    dg.dasGesetzPermission:
       description: Allows a Player to use the Law command

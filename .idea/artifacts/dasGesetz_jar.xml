@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="dasGesetz:jar">
+    <output-path>$PROJECT_DIR$/target/mc_server/plugins</output-path>
+    <root id="archive" name="bukkit_dasGesetz.jar">
+      <element id="module-output" name="bukkit_dasGesetz" />
+    </root>
+  </artifact>
+</component>

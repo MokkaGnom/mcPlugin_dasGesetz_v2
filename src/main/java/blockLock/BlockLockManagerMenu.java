@@ -35,7 +35,7 @@ public class BlockLockManagerMenu implements Listener
 	{
 		this.blManager = blManager;
 		this.blockLock = bl;
-		inv = Bukkit.createInventory(null, invSize, "BlockLock Manager");
+		inv = Bukkit.createInventory(null, invSize, "BlockLock manager.Manager");
 
 		items = new ItemStack[invSize];
 		ItemMeta meta = null;

@@ -1,230 +1,190 @@
 package manager;
 
-import java.util.Arrays;
-import java.util.List;
-
+import blockLock.BlockLockManager;
+import commands.CommandsManager;
+import deathChest.DeathChestManager;
+import farming.EasyFarming;
+import farming.Timber;
+import home.HomeManager;
 import org.bukkit.Bukkit;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
-
-import blockLock.*;
-import commands.*;
-import deathChest.*;
-import farming.*;
-import home.*;
-import other.*;
-import ping.*;
-
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.command.TabExecutor;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
+import other.BlockLogger;
+import other.Messages;
+import ping.PingManager;
 
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Main-Class
+ */
 public class Manager extends JavaPlugin
 {
-	private final String[] plugins = { "DasGesetz", "WeatherClear", "Coords", "BlockLogger", "Timber", "DeathChest", "BlockLock", "Messages", "Home", "EasyFarming", "Ping" };
-	private final String[] commands = { "dasGesetz", "weatherClear", "coords", "blockLock", "home", "ping" };
-	private final TabExecutor[] commandExe;
-	private final Listener[] commandListener;
+    private static final String JSON_PLUGIN_KEY = "Manager";
+    private static final String MESSAGE_PREFIX = String.format(ManagedPlugin.MESSAGE_PREFIX, "DG-Manager");
+    private static Manager instance;
+    private final ManagerCommands managerCommands;
 
-	public Manager()
-	{
-		this.getCommand("dgManager").setExecutor(this);
-		this.getCommand("dgManager").setTabCompleter(this);
+    private final Map<ManagedPlugin, Boolean> plugins = new HashMap<>();
 
-		commandListener = new Listener[] { new BlockLogger(), new Timber(this.getConfig().getBoolean("Timber.BreakLeaves"), this.getConfig().getInt("Timber.BreakLeavesRadius")),
-				new DeathChestManager(this, this.getConfig().getInt("DeathChest.DespawnInTicks"), this.getConfig().getBoolean("DeathChest.DespawnDropping")), new BlockLockManager(this),
-				new Messages(this.getConfig().getString("Messages.Message")), new EasyFarming(),
-				new PingManager(this, this.getConfig().getInt("Ping.Duration"), this.getConfig().getInt("Ping.Cooldown")) };
+    /**
+     * NICHT BENUTZEN !!!
+     * <p>Stattdessen: {@link Manager#getInstance()}</p>
+     */
+    public Manager ()
+    {
+        this.managerCommands = new ManagerCommands();
+    }
 
-		commandExe = new TabExecutor[] { new dasGesetz(), new weatherClear(), new coords(), new BlockLockCommands((BlockLockManager) commandListener[3]),
-				new HomeCommands(this, this.getConfig().getInt("Homes.MaxHomes")), new PingCommands((PingManager) commandListener[6]) };
-	}
+    public static Manager getInstance ()
+    {
+        return instance;
+    }
 
-	@Override
-	public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
-	{
-		if (args.length == 2)
-		{
-			int index = Arrays.asList(plugins).indexOf(args[0]);
-			boolean deactivate = args[1] == "0";
+    // Benötigt für Artifact-Build
+    public static void main (String[] args)
+    {
+        System.out.println("ERROR: MAIN CALLED!");
+        Bukkit.getLogger().info("ERROR: MAIN CALLED!");
+    }
 
-			if (index == -1)
-			{
-				sender.sendMessage("Ungültiges Plugin");
-				return false;
-			}
+    private void createDefaultConfig ()
+    {
+        FileConfiguration config = this.getConfig();
 
-			this.getConfig().set("Manager." + plugins[index], deactivate);
+        for (Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet())
+        {
+            pluginEntry.getKey().createDefaultConfig(config);
+            try
+            {
+                config.addDefault(getConfigEntryPath(JSON_PLUGIN_KEY, pluginEntry.getKey().getName()), pluginEntry.getValue());
+            } catch (Exception e)
+            {
+                Bukkit.getLogger().warning(e.getMessage());
+                Bukkit.getLogger().info(getConfigEntryPath(JSON_PLUGIN_KEY, pluginEntry.getKey().getName()));
+            }
+        }
 
-			if (deactivate)
-				sender.sendMessage("Plugin: \"" + plugins[index] + "\" wurde aktiviert");
-			else
-				sender.sendMessage("Plugin: \"" + plugins[index] + "\" wurde deaktiviert");
-			return true;
-		}
-		else
-		{
-			sender.sendMessage("Ungültiger Syntax");
-			return false;
-		}
-	}
+        config.options().copyDefaults(true);
+        this.saveConfig();
+    }
 
-	@Override
-	public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args)
-	{
-		if (args.length == 1)
-		{
-			return Arrays.asList(plugins);
-		}
-		else if (args.length == 2)
-		{
-			return Arrays.asList("0", "1");
-		}
-		return Arrays.asList("");
-	}
+    @Override
+    public void onEnable ()
+    {
+        instance = this;
+        this.plugins.put(new BlockLockManager(), true);
+        this.plugins.put(new CommandsManager(), true);
+        this.plugins.put(new DeathChestManager(), true);
+        this.plugins.put(new EasyFarming(), true);
+        this.plugins.put(new Timber(), true);
+        this.plugins.put(new HomeManager(), true);
+        this.plugins.put(new BlockLogger(), true);
+        this.plugins.put(new Messages(), true);
+        this.plugins.put(new PingManager(), true);
 
-	// When plugin is enabled / on server start
-	@Override
-	public void onEnable ()
-	{
-		createConfig();
-		enableAll();
-	}
+        sendInfoMessage("Enable plugins...");
 
-	// When plugin is disabled / on server shutdown
+        managerCommands.onEnable();
+        createDefaultConfig();
 
-	@Override
-	public void onDisable ()
-	{
-		disableAll();
-	}
+        Map<ManagedPlugin, Boolean> newPlugins = new HashMap<>();
+        for (Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet())
+        {
+            boolean enable = this.getConfig().getBoolean(getConfigEntryPath(JSON_PLUGIN_KEY, pluginEntry.getKey().getName()));
+            newPlugins.put(pluginEntry.getKey(), enable);
 
-	public void createConfig()
-	{
-		FileConfiguration config = this.getConfig();
+            if (enable)
+            {
+                sendInfoMessage("Enable \"" + pluginEntry.getKey().getName() + "\"...");
+                pluginEntry.getKey().onEnable();
+            }
+        }
+        this.plugins.putAll(newPlugins);
 
-		config.addDefault("DeathChest.DespawnInTicks", 12000);
-		config.addDefault("DeathChest.DespawnDropping", true);
-		config.addDefault("Messages.Message", "Check out the plugin: https://github.com/MokkaGnom/mcPlugin_dasGesetz");
-		config.addDefault("Homes.MaxHomes", 10);
-		config.addDefault("Timber.BreakLeaves", true);
-		config.addDefault("Timber.BreakLeavesRadius", 4);
-		config.addDefault("Ping.Duration", 5000);
-		config.addDefault("Ping.Cooldown", 5000);
+        sendInfoMessage("All plugins enabled");
+    }
 
-		for (int i = 0; i < plugins.length; i++)
-		{
-			config.addDefault("Manager." + plugins[i], true);
-		}
+    @Override
+    public void onDisable ()
+    {
+        managerCommands.onDisable();
 
-		config.options().copyDefaults(true);
-		this.saveConfig();
-	}
+        for (Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet())
+        {
+            if (pluginEntry.getValue())
+            {
+                pluginEntry.getKey().onDisable();
+            }
+        }
+    }
 
-	public void enableAll()
-	{
-		try
-		{
-			FileConfiguration config = this.getConfig();
+    public void enablePlugin (ManagedPlugin plugin)
+    {
+        plugin.onEnable();
+        this.getConfig().set(getConfigEntryPath(JSON_PLUGIN_KEY, plugin.getName()), true);
+    }
 
-			for (int i = 0; i < plugins.length; i++)
-			{
-				if (config.getBoolean("Manager." + plugins[i]))
-				{
-					switch (i)
-					{
-					case 0: // dasGesetz:
-						this.getCommand(commands[0]).setExecutor(commandExe[0]);
-						this.getCommand(commands[0]).setTabCompleter(commandExe[0]);
-						break;
+    public void disablePlugin (ManagedPlugin plugin)
+    {
+        plugin.onDisable();
+        this.getConfig().set(getConfigEntryPath(JSON_PLUGIN_KEY, plugin.getName()), false);
+    }
 
-					case 1: // weatherClear:
-						this.getCommand(commands[1]).setExecutor(commandExe[1]);
-						this.getCommand(commands[0]).setTabCompleter(commandExe[1]);
-						break;
+    public Map<ManagedPlugin, Boolean> getPlugins ()
+    {
+        return plugins;
+    }
 
-					case 2: // coords:
-						this.getCommand(commands[2]).setExecutor(commandExe[2]);
-						this.getCommand(commands[0]).setTabCompleter(commandExe[2]);
-						break;
+    public String getConfigEntryPath (String... path)
+    {
+        StringBuilder finalPath = new StringBuilder();
+        for (String s : path)
+        {
+            finalPath.append(s);
+            finalPath.append(".");
+        }
+        return finalPath.toString().substring(0, finalPath.toString().length() - 1);
+    }
 
-					case 3: // blockLogger:
-						this.getCommand(commands[3]).setExecutor(commandExe[3]);
-						this.getServer().getPluginManager().registerEvents(commandListener[0], this);
-						break;
+    public Object getConfigEntry (String... path)
+    {
+        return getConfig().getString(getConfigEntryPath(path));
+    }
 
-					case 4: // Timber:
-						this.getServer().getPluginManager().registerEvents(commandListener[1], this);
-						break;
+    public Object getConfigEntry (String path)
+    {
+        return this.getConfig().get(path);
+    }
 
-					case 5: // DeathChest:
-						this.getServer().getPluginManager().registerEvents(commandListener[2], this);
-						break;
+    public void sendErrorMessage (String prefix, String message)
+    {
+        Bukkit.getLogger().severe(prefix + " " + message);
+    }
 
-					case 6: // BlockLock:
-						this.getCommand(commands[3]).setExecutor(commandExe[3]);
-						this.getCommand(commands[3]).setTabCompleter(commandExe[3]);
-						this.getServer().getPluginManager().registerEvents(commandListener[3], this);
-						break;
+    public void sendErrorMessage (String message)
+    {
+        sendErrorMessage(MESSAGE_PREFIX, message);
+    }
 
-					case 7: // Messages:
-						this.getServer().getPluginManager().registerEvents(commandListener[4], this);
-						break;
+    public void sendWarningMessage (String prefix, String message)
+    {
+        Bukkit.getLogger().warning(prefix + " " + message);
+    }
 
-					case 8: // Home:
-						this.getCommand(commands[4]).setExecutor(commandExe[4]);
-						this.getCommand(commands[4]).setTabCompleter(commandExe[4]);
-						break;
+    public void sendWarningMessage (String message)
+    {
+        sendWarningMessage(MESSAGE_PREFIX, message);
+    }
 
-					case 9: // EasyFarming:
-						this.getServer().getPluginManager().registerEvents(commandListener[5], this);
-						break;
+    public void sendInfoMessage (String prefix, String message)
+    {
+        Bukkit.getLogger().info(prefix + " " + message);
+    }
 
-					case 10: // Ping:
-						this.getServer().getPluginManager().registerEvents(commandListener[6], this);
-						this.getCommand(commands[5]).setExecutor(commandExe[5]);
-						this.getCommand(commands[5]).setTabCompleter(commandExe[5]);
-						break;
-					}
-				}
-			}
-
-			((BlockLockManager) commandListener[3]).loadFromFile();
-			((HomeCommands) commandExe[4]).loadFromFile();
-
-			Bukkit.getConsoleSender().sendMessage("DGMANAGER: ENABLED PLUGINS");
-		}
-		catch (Exception e)
-		{
-			Bukkit.getConsoleSender().sendMessage("DGMANAGER ERROR: " + e.getLocalizedMessage());
-		}
-	}
-
-	public void disableAll()
-	{
-		try
-		{
-			for (int i = 0; i < commandExe.length; i++)
-			{
-				this.getCommand(commands[i]).setExecutor(null);
-				this.getCommand(commands[i]).setTabCompleter(null);
-			}
-			for (int i = 0; i < commandListener.length; i++)
-			{
-				HandlerList.unregisterAll(commandListener[i]);
-			}
-
-			((BlockLogger) commandListener[0]).deleteLogs();
-			((DeathChestManager) commandListener[2]).removeAllDeathChests();
-			((BlockLockManager) commandListener[3]).saveToFile();
-			((HomeCommands) commandExe[4]).saveToFile();
-			Bukkit.getConsoleSender().sendMessage("DGMANAGER: DISABLED PLUGINS");
-		}
-		catch (Exception e)
-		{
-			Bukkit.getConsoleSender().sendMessage("DGMANAGER ERROR: " + e.getLocalizedMessage());
-		}
-	}
+    public void sendInfoMessage (String message)
+    {
+        sendInfoMessage(MESSAGE_PREFIX, message);
+    }
 }

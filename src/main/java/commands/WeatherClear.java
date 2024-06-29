@@ -8,8 +8,10 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 
-public class weatherClear implements TabExecutor
+public class WeatherClear implements TabExecutor
 {
+	public static final String COMMAND = "weatherClear";
+
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
 	{

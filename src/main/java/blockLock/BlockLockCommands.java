@@ -16,6 +16,8 @@ import org.bukkit.OfflinePlayer;
 
 public class BlockLockCommands implements TabExecutor
 {
+	public static final String command = "blockLock";
+
 	private BlockLockManager clManager;
 
 	public BlockLockCommands(BlockLockManager clManager)

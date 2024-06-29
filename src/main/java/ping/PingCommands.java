@@ -12,6 +12,8 @@ import net.md_5.bungee.api.ChatColor;
 
 public class PingCommands implements TabExecutor
 {
+    public static final String COMMAND = "ping";
+
     private PingManager pingManager;
 
     public PingCommands(PingManager pm)

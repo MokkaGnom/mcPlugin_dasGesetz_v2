@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import manager.Manager;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.Door;
@@ -87,10 +88,10 @@ public class BlockLockUser implements Serializable
 
     public boolean removeBlockLock(BlockLock bl, BlockLockManager blm)
     {
-        bl.getBlock().removeMetadata(BlockLockManager.blockLockKey, blm.getManager());
+        bl.getBlock().removeMetadata(BlockLockManager.blockLockKey, Manager.getInstance());
         BlockLock bl2 = bl.getSecondBlockLock();
         if (bl2 != null)
-            bl2.getBlock().removeMetadata(BlockLockManager.blockLockKey, blm.getManager());
+            bl2.getBlock().removeMetadata(BlockLockManager.blockLockKey, Manager.getInstance());
 
         return blockLocks.remove(bl) && blockLocks.remove(bl2);
     }

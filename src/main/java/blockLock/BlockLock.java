@@ -1,6 +1,7 @@
 package blockLock;
 
 // Bukkit:
+import manager.Manager;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.Chest;
@@ -38,7 +39,7 @@ public class BlockLock implements Serializable
 		blockPosition[2] = block.getZ();
 		worldName = block.getWorld().getName();
 		if (!block.hasMetadata(BlockLockManager.blockLockKey))
-			block.setMetadata(BlockLockManager.blockLockKey, new FixedMetadataValue(blm.getManager(), block.getType()));
+			block.setMetadata(BlockLockManager.blockLockKey, new FixedMetadataValue(Manager.getInstance(), block.getType()));
 
 		this.blmm = null;
 		this.owner = owner;
@@ -48,15 +49,6 @@ public class BlockLock implements Serializable
 		this.blockBelowLock = true;
 
 		secondBlockLock = null;
-	}
-
-	@Override
-	protected void finalize()
-	{
-		if (this.blmm != null)
-		{
-			HandlerList.unregisterAll(this.blmm);
-		}
 	}
 
 	public boolean unlock(BlockLockManager blm)
@@ -69,7 +61,7 @@ public class BlockLock implements Serializable
 		if (blmm == null)
 		{
 			this.blmm = new BlockLockManagerMenu(blManager, this);
-			blManager.getManager().getServer().getPluginManager().registerEvents(blmm, blManager.getManager());
+			Manager.getInstance().getServer().getPluginManager().registerEvents(blmm, Manager.getInstance());
 			return true;
 		}
 		return false;
