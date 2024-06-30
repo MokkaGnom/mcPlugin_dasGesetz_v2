@@ -26,7 +26,7 @@ public class DasGesetz implements TabExecutor
 			"(12) Niemand darf einem anderen Spieler eine Falle stellen, wodurch dieser zu Schaden (siehe Artikel 13) kommt.\n",
 			"(13) Niemand darf einem anderen Spieler Schaden (siehe Artikel 26) zufügen, sowohl physisch als auch psychisch.\n",
 			"(14) Spieler, welche die Entscheidungen des Gerichtes ignorieren, werden vorübergehend vom Schutz des Servers ausgeschlossen (siehe Artikel 24 & 25).\n",
-			"(15) Das wiederholte Benutzen eines Command-Blockes innerhalb kürzester Zeit ist nicht gestattet.\n",
+			"(15) Das wiederholte Benutzen eines CommandStrings-Blockes innerhalb kürzester Zeit ist nicht gestattet.\n",
 			"(16) Sollte die Person, welche den Schaden repariren bzw. ein Item ersetzen muss (siehe Artikel 4-6) nicht in der Lage dazu sein, so hat er dem betroffenen Spieler einen gleichwertigen Ersatz zu erbringen (siehe Artikel 17).\n",
 			"(17) Ob ein Ersatz gleichwertig ist, wird von der betroffenen Person entschieden, sollte es jedoch zu Uneinigkeiten kommen, wird das Gericht darüber entscheiden.\n",
 			"(18) Sollte sich zu der Zeit, in der ein Gericht benötigt wird weniger als drei unbetroffene Spieler auf dem Server befinden, so wird auf Discord nach freiwilligen unbetroffenen Spielern gefragt, sollten sich auch dort keine finden, so wird die Gerichtsverhandlung vertagt.\n",

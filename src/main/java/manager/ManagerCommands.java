@@ -3,6 +3,7 @@ package manager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import utility.ErrorMessage;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,7 +32,7 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
 
             if (foundPluginList.isEmpty())
             {
-                sender.sendMessage(OutputStrings.ERROR.UNKNOWN_PLUGIN);
+                sender.sendMessage(ErrorMessage.UNKNOWN_PLUGIN.getMessage());
                 return false;
             }
 
@@ -50,7 +51,7 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
             return true;
         } else
         {
-            sender.sendMessage(OutputStrings.ERROR.UNKNOWN_SYNTAX);
+            sender.sendMessage(ErrorMessage.UNKNOWN_SYNTAX.getMessage());
             return false;
         }
     }
@@ -65,7 +66,7 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
         {
             return Stream.concat(PLUGIN_DISABLE_STRINGS.stream(), PLUGIN_ENABLE_STRINGS.stream()).collect(Collectors.toList());
         }
-        return OutputStrings.COMMAND_NO_OPTION_AVAILABLE;
+        return ErrorMessage.COMMAND_NO_OPTION_AVAILABLE;
     }
 
     @Override

@@ -6,7 +6,7 @@ author: MokkaGnom
 description: Das Gesetz. Timber, EasyFarming, DeathChest, BlockLock, Home, Ping
 commands:
    dgManager:
-      description: Aktiviert/Deaktiviert den Command
+      description: Aktiviert/Deaktiviert den CommandStrings
       usage: /dgManager <command> <0/1>
       permission: dg.dgManagerPermission
       aliases:

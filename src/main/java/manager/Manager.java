@@ -137,7 +137,7 @@ public class Manager extends JavaPlugin
         return plugins;
     }
 
-    public String getConfigEntryPath (String... path)
+    public static String getConfigEntryPath (String... path)
     {
         StringBuilder finalPath = new StringBuilder();
         for (String s : path)
