@@ -18,7 +18,6 @@ import static home.HomeConstants.*;
 
 public class HomeManager implements ManagedPlugin
 {
-    public static final Vector TP_CORRECT = new Vector(0.5d,1.0d,0.5d); // Damit man beim teleportieren mittig auf dem Block landet
     public final int MAX_HOMES = Manager.getInstance().getConfig().getInt(Manager.getInstance().getConfigEntryPath(getName(), MAX_HOMES_JSON_KEY));
     public final int MAX_BLOCK_DISTANCE = Manager.getInstance().getConfig().getInt(Manager.getInstance().getConfigEntryPath(getName(), MAX_CREATE_DISTANCE_JSON_KEY));
     private final File SAVE_FILE = new File(Manager.getInstance().getDataFolder(), getName() + ".yml");
@@ -30,6 +29,19 @@ public class HomeManager implements ManagedPlugin
 
     private String getMessageString(String message) {
         return ChatColor.GRAY + "[" + ChatColor.BLUE + getName() + ChatColor.GRAY + "] " + ChatColor.WHITE + message;
+    }
+
+    /**
+     * Damit man beim teleportieren mittig auf dem Block landet
+     * @param loc Der ursprungs Ort
+     * @return Der neue Ort
+     */
+    private Location getTPLocation(Location loc) {
+        return loc.add(
+                loc.getX() % 1 == 0.0d ? 0.5d : 0.0d,
+                1.0d,
+                loc.getZ() % 1 == 0.0d ? 0.5d : 0.0d
+        );
     }
 
     public boolean sendMessage(CommandSender sender, List<String> messages) {
@@ -71,7 +83,7 @@ public class HomeManager implements ManagedPlugin
             return new ErrorMessage(ERROR_MAX_HOME_COUNT);
         }
         else {
-            homeMap.put(homeName, location.add(TP_CORRECT));
+            homeMap.put(homeName, getTPLocation(location));
             return ErrorMessage.NO_ERROR;
         }
     }
