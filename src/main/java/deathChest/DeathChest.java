@@ -3,6 +3,7 @@ package deathChest;
 import manager.Manager;
 import org.bukkit.Bukkit;
 //Bukkit:
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
@@ -12,202 +13,166 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.block.Block;
+import org.bukkit.metadata.MetadataValue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 //Java:
-import java.util.List;
 import java.util.Map.Entry;
-import java.util.UUID;
 
 public class DeathChest
 {
-	private DeathChestManager dcManager;
-	private Block chestBlock;
-	private Inventory inventory;
-	private UUID owner;
-	private DeathChestRemoveTask removeTask;
+    public static final Material DEATH_CHEST_MATERIAL = Material.CHEST;
+    public static final String METADATA_KEY = "DeathChest";
 
-	public DeathChest(DeathChestManager dcm, Player p, List<ItemStack> items, Manager manager, long timer, boolean dropItems)
-	{
-		this.dcManager = dcm;
-		owner = p.getUniqueId();
-		chestBlock = p.getLocation().getBlock();
+    private final long timeSpawned;
+    private final Material oldMaterial;
+    private final Location location;
+    private Inventory inventory;
+    private final UUID owner;
 
-		// Creating Chest:
-		// Moving up till air or water is found
-		while (!(chestBlock.getType().equals(Material.AIR) || chestBlock.getType().equals(Material.WATER)))
-		{
-			chestBlock = chestBlock.getChunk().getBlock(chestBlock.getX() & 15, chestBlock.getY() + 1, chestBlock.getZ() & 15);
-		}
-		chestBlock.setType(Material.CHEST);
+    public DeathChest(Player p, List<ItemStack> items) {
+        this.owner = p.getUniqueId();
+        this.timeSpawned = System.currentTimeMillis();
 
-		// Creating ArmorStand for visualisation:
-		ArmorStand armorStand = (ArmorStand) chestBlock.getWorld().spawnEntity(chestBlock.getLocation().add(0.5, 0, 0.5), EntityType.ARMOR_STAND);
-		armorStand.setVisible(false);
-		armorStand.setVisualFire(false);
-		armorStand.setCollidable(false);
-		armorStand.setSilent(true);
-		armorStand.setInvulnerable(true);
-		armorStand.setGravity(false);
-		armorStand.setSmall(true);
-		armorStand.setCustomNameVisible(true);
-		armorStand.setCustomName(p.getName() + "'s Deathchest");
-		armorStand.setMetadata("DeathChest", new FixedMetadataValue(manager, chestBlock.getLocation().toString()));
+        // Creating Chest:
+        Block block = p.getLocation().getBlock();
+        // Moving up till air or water is found
+        while(!(block.getType().equals(Material.AIR) || block.getType().equals(Material.WATER))) {
+            block = block.getChunk().getBlock(block.getX() & 15, block.getY() + 1, block.getZ() & 15);
+        }
+        this.oldMaterial = block.getType();
+        block.setType(DEATH_CHEST_MATERIAL);
+        this.location = block.getLocation();
 
-		// Creating Inventory:
-		int invSize = 9;
-		while (items.size() - invSize > 0 && invSize < 54)
-		{
-			invSize += 9;
-		}
-		inventory = Bukkit.createInventory(null, invSize, p.getName() + "'s Deathchest");
-		for (ItemStack i : items)
-		{
-			inventory.addItem(i);
-		}
+        // Creating ArmorStand for visualisation:
+        ArmorStand armorStand = (ArmorStand) block.getWorld().spawnEntity(block.getLocation().add(0.5, 0, 0.5), EntityType.ARMOR_STAND);
+        armorStand.setVisible(false);
+        armorStand.setVisualFire(false);
+        armorStand.setCollidable(false);
+        armorStand.setSilent(true);
+        armorStand.setInvulnerable(true);
+        armorStand.setGravity(false);
+        armorStand.setSmall(true);
+        armorStand.setCustomNameVisible(true);
+        armorStand.setCustomName(p.getName() + "'s Deathchest");
+        armorStand.setMetadata(METADATA_KEY, new FixedMetadataValue(Manager.getInstance(), block.getLocation().toString()));
 
-		// Creating automated removal
-		removeTask = new DeathChestRemoveTask(this, dropItems);
-		removeTask.runTaskLater(manager, timer);
+        // Creating Inventory:
+        //TODO: Evtl. kann man den owner auf die DeathChest (den Block) setzen und damit das eigentliche Inventar der Kiste überschreiben
+        inventory = Bukkit.createInventory(null, (int) Math.nextUp(items.size() / 9.0d) * 9, p.getName() + "'s Deathchest");
+        for(ItemStack i : items) {
+            inventory.addItem(i);
+        }
+    }
 
-		// Message to player
-		DeathChestManager.sendMessage(owner, "Created at (" + chestBlock.getX() + ", " + chestBlock.getY() + ", " + chestBlock.getZ() + ") T: " + timer / 20 + "s");
-		Bukkit.getConsoleSender().sendMessage("Created Death Chest for " + owner.toString() + " at (" + chestBlock.getX() + ", " + chestBlock.getY() + ", " + chestBlock.getZ() + ")");
-	}
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(!(o instanceof DeathChest that)) return false;
+        return oldMaterial == that.oldMaterial && Objects.equals(location, that.location) && Objects.equals(inventory, that.inventory) && Objects.equals(owner, that.owner);
+    }
 
-	public boolean collect()
-	{
-		List<ItemStack> newItems = new ArrayList<ItemStack>();
-		Player player = Bukkit.getServer().getPlayer(owner);
+    @Override
+    public int hashCode() {
+        return Objects.hash(oldMaterial, location, owner);
+    }
 
-		if (player.isSneaking())
-		{
-			for (ItemStack i : inventory.getContents())
-			{
-				if (i == null)
-					continue;
+    @Override
+    public String toString() {
+        return "DeathChest{" +
+                "timeSpawned=" + timeSpawned +
+                ", oldMaterial=" + oldMaterial +
+                ", location=" + location +
+                ", inventory=" + inventory +
+                ", owner=" + owner +
+                '}';
+    }
 
-				HashMap<Integer, ItemStack> drop = player.getInventory().addItem(i);
-				player.updateInventory();
+    public boolean collect() {
+        Player player = Bukkit.getServer().getPlayer(owner);
+        if(player == null) {
+            return false;
+        }
 
-				for (Entry<Integer, ItemStack> entry : drop.entrySet())
-				{
-					if (entry.getValue().getAmount() > 0)
-					{
-						newItems.add(entry.getValue());
-					}
-				}
-			}
+        if(player.isSneaking()) {
+            List<ItemStack> newItems = new ArrayList<>();
+            for(ItemStack i : inventory.getContents()) {
+                if(i == null)
+                    continue;
 
-			if (newItems.size() == 0)
-			{
-				inventory.clear();
-			}
-			else
-			{
-				ItemStack[] array = new ItemStack[newItems.size()];
-				newItems.toArray(array);
-				inventory.setContents(array);
-			}
-		}
-		else
-		{
-			player.openInventory(inventory);
-		}
-		return removeIfEmpty();
-	}
+                HashMap<Integer, ItemStack> drop = player.getInventory().addItem(i);
+                player.updateInventory();
 
-	public boolean removeIfEmpty()
-	{
-		return removeIfEmpty(false);
-	}
+                for(Entry<Integer, ItemStack> entry : drop.entrySet()) {
+                    if(entry.getValue().getAmount() > 0) {
+                        newItems.add(entry.getValue());
+                    }
+                }
+            }
 
-	public boolean removeIfEmpty(boolean override)
-	{
-		boolean empty = true;
+            if(newItems.isEmpty()) {
+                inventory.clear();
+            }
+            else {
+                ItemStack[] array = new ItemStack[newItems.size()];
+                newItems.toArray(array);
+                inventory.setContents(array);
+            }
+        }
+        else {
+            player.openInventory(inventory);
+        }
+        return removeIfEmpty();
+    }
 
-		for (ItemStack item : inventory.getContents())
-		{
-			if (item != null)
-			{
-				empty = false;
-				break;
-			}
-		}
+    public boolean removeIfEmpty() {
 
-		if (!chestBlock.getType().equals(Material.CHEST))
-		{
-			remove(true);
-			return true;
-		}
-		else if (empty)
-		{
-			remove();
-			return true;
-		}
-		else
-			return false;
+        return ((!location.getBlock().getType().equals(DEATH_CHEST_MATERIAL) || inventory.isEmpty()) && remove(true));
+    }
 
-	}
+    public boolean remove(boolean dropItems) {
+        Block block = location.getBlock();
+        if(block.getType().equals(DEATH_CHEST_MATERIAL)) {
+            // Entfernen des Armorstands
+            for(Entity i : block.getChunk().getEntities()) {
+                if(i instanceof ArmorStand) {
+                    MetadataValue metadata = i.getMetadata(METADATA_KEY).get(0);
+                    if(metadata != null && metadata.asString().equals(location.toString())) {
+                        i.remove();
+                        break;
+                    }
+                }
+            }
 
-	public boolean remove()
-	{
-		return remove(false);
-	}
+            if(dropItems) {
+                for(ItemStack i : inventory.getContents()) {
+                    location.getWorld().dropItem(location, i);
+                }
+            }
+            inventory.clear();
+            block.setType(oldMaterial);
+            return true;
+        }
+        return false;
+    }
 
-	public boolean remove(boolean override)
-	{
-		if (chestBlock.getType().equals(Material.CHEST) || override)
-		{
-			try
-			{
-				for (Entity i : chestBlock.getChunk().getEntities())
-				{
-					if (i.hasMetadata("DeathChest") && i.getMetadata("DeathChest").get(0).asString().equals(chestBlock.getLocation().toString()))
-					{
-						i.remove();
-						break;
-					}
-				}
+    public boolean checkIfOwner(UUID uuid) {
+        return owner.equals(uuid);
+    }
 
-				inventory.clear();
-				removeTask.cancel();
-				removeTask = null;
-				if (chestBlock.getType().equals(Material.CHEST))
-					chestBlock.setType(Material.AIR);
-				dcManager.removeDeathChest(this);
-			}
-			catch (Exception e)
-			{
-				Bukkit.getLogger().severe("DeathChest: remove exception (override: " + override + "): " + e.getLocalizedMessage());
-				return false;
-			}
-			DeathChestManager.sendMessage(owner, "Removed at (" + chestBlock.getX() + ", " + chestBlock.getY() + ", " + chestBlock.getZ() + ")");
-			Bukkit.getConsoleSender().sendMessage("Removed Death Chest from " + owner.toString() + " at X:" + chestBlock.getLocation().getX() + " Y:" + chestBlock.getLocation().getY()
-					+ " Z:" + chestBlock.getLocation().getZ());
-			return true;
-		}
-		return false;
-	}
+    public Location getLocation() {
+        return location;
+    }
 
-	public boolean checkIfOwner(Player p)
-	{
-		return owner.equals(p.getUniqueId());
-	}
+    public UUID getOwner() {
+        return owner;
+    }
 
-	public Block getBlock()
-	{
-		return chestBlock;
-	}
+    public Inventory getChestInventory() {
+        return inventory;
+    }
 
-	public Player getOwner()
-	{
-		return Bukkit.getServer().getPlayer(owner);
-	}
-
-	public Inventory getChestInventory()
-	{
-		return inventory;
-	}
+    public long getTimeSpawned() {
+        return timeSpawned;
+    }
 }

@@ -5,8 +5,10 @@ package deathChest;
 import manager.ManagedPlugin;
 import manager.Manager;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Player;
@@ -24,295 +26,280 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
+import static deathChest.DeathChestConstants.*;
 
 public class DeathChestManager implements Listener, ManagedPlugin
 {
-	private long timer;
-	private boolean dropItems;
-	private List<DeathChest> deathChests;
+    /**
+     * Zeit bis entfernen (in Sekunden)
+     */
+    private final long timer;
 
-	public DeathChestManager()
-	{
-		this.timer = Manager.getInstance().getConfig().getInt("DeathChest.DespawnInTicks");
-		this.dropItems = Manager.getInstance().getConfig().getBoolean("DeathChest.DespawnDropping");
-		deathChests = new ArrayList<>();
-	}
+    /**
+     * Ob der Inhalt der DeathChest nach Ablauf des Timers gedroppt werden sollen
+     */
+    private final boolean dropItems;
 
-	/** Sends a message to a player */
-	public static boolean sendMessage(UUID receiver, String message, boolean error)
-	{
-		if (receiver != null)
-		{
-			Player p = Bukkit.getServer().getPlayer(receiver);
-			if (p != null && message != null)
-			{
-				if (error)
-				{
-					p.sendMessage("§7[§BDeathChest§7] §C" + message);
-					Bukkit.getConsoleSender().sendMessage("DeathChest Error: " + message);
-				}
-				else
-				{
-					p.sendMessage("§7[§BDeathChest§7] §D" + message);
-				}
-				return true;
-			}
-		}
-		return false;
-	}
+    /**
+     * Alle DeathChests, nach Spieler-UUID gemappt
+     */
+    private final Map<UUID, List<DeathChest>> deathChests;
 
-	/** Sends a message to a player */
-	public static boolean sendMessage(UUID receiver, String message)
-	{
-		return sendMessage(receiver, message, false);
-	}
+    public DeathChestManager() {
+        this.timer = Manager.getInstance().getConfig().getInt(DESPAWN_TIME_JSON_KEY);
+        this.dropItems = Manager.getInstance().getConfig().getBoolean(DROP_ITEMS_JSON_KEY);
+        deathChests = new HashMap<>();
+    }
 
-	@EventHandler
-	public void onWorldSave(WorldSaveEvent event)
-	{
-		if (event.getWorld().getName().equals(Bukkit.getWorlds().get(0).getName()))
-		{
-			List<DeathChest> oldList = new ArrayList<DeathChest>();
-			oldList.addAll(deathChests);
+    public String getMessageString(String message) {
+        return ChatColor.GRAY + "[" + ChatColor.AQUA + getName() + ChatColor.GRAY + "] " + ChatColor.WHITE + message;
+    }
 
-			for (DeathChest i : oldList) i.removeIfEmpty(true);
-		}
-	}
+    public boolean sendMessage(CommandSender receiver, List<String> messages) {
+        if(receiver != null) {
+            for(String message : messages) {
+                receiver.sendMessage(getMessageString(message));
+            }
+            return true;
+        }
+        return false;
+    }
 
-	/** Creates a DeathChest */
-	@EventHandler
-	public void onPlayerDeath(PlayerDeathEvent event)
-	{
-		Player p = event.getEntity();
-		if (p.hasPermission("dg.deathChestPermission"))
-		{
-			DeathChest dc = new DeathChest(this, p, event.getDrops(), Manager.getInstance(), timer, dropItems);
-			deathChests.add(dc);
-			if (dc.equals(deathChests.get(deathChests.size() - 1)))
-				event.getDrops().clear();
-		}
-		else
-		{
-			sendMessage(p.getUniqueId(), "No permission to create a DeathChest!");
-		}
-	}
+    public boolean sendMessage(CommandSender receiver, String message) {
+        if(receiver != null) {
+            receiver.sendMessage(getMessageString(message));
+            return true;
+        }
+        return false;
+    }
 
-	/** Let a player with according permissions, collect the chest, either by sneak+click or normally opening the chest */
-	@EventHandler
-	public void onPlayerInteract(PlayerInteractEvent event)
-	{
-		if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock().getType().equals(Material.CHEST))
-		{
-			Player p = event.getPlayer();
-			DeathChest dc = getDeathChest(event.getClickedBlock());
-			if (dc != null)
-			{
-				event.setCancelled(true); // To stop the "normal" chest inventory from opening
-				if ((dc.checkIfOwner(p) && p.hasPermission("dg.deathChestPermission")) || p.hasPermission("dg.deathChestByPassPermission"))
-				{
-					try
-					{
-						if (dc.collect())
-						{
-							deathChests.remove(dc);
-							sendMessage(p.getUniqueId(), "Collected!");
-						}
-					}
-					catch (Exception e)
-					{
-						sendMessage(event.getPlayer().getUniqueId(), "Collect Error: " + e.getLocalizedMessage(), true);
-					}
-				}
-				else
-				{
-					sendMessage(p.getUniqueId(), "No permission!");
-					// sendMessage(dc.getOwner().getUniqueId(), p.getName() + " tried to open your Death Chest at X:" + dc.getBlock().getLocation().getX() + " Y:"
-					// + dc.getBlock().getLocation().getY() + " Z:" + dc.getBlock().getLocation().getZ());
-				}
-			}
-		}
-	}
+    public boolean sendErrorMessage(CommandSender receiver, String message) {
+        if(receiver != null) {
+            receiver.sendMessage(getMessageString(message));
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), message);
+            return true;
+        }
+        return false;
+    }
 
-	/** Checks if DeathChest is empty and removes it if so */
-	@EventHandler
-	public void onInventoryClose(InventoryCloseEvent event)
-	{
-		List<DeathChest> list = new ArrayList<DeathChest>();
-		list.addAll(deathChests);
-		for (DeathChest i : list)
-		{
-			if (event.getInventory().equals(i.getChestInventory()))
-			{
-				i.removeIfEmpty();
-			}
-		}
-	}
+    public boolean createDeathCest(Player player, List<ItemStack> items) {
+        List<DeathChest> chests = Objects.requireNonNullElse(deathChests.get(player.getUniqueId()), new ArrayList<>());
+        DeathChest chest = new DeathChest(player, items);
+        Bukkit.getScheduler().runTaskLater(Manager.getInstance(), () -> chest.remove(dropItems), timer);
+        deathChests.put(player.getUniqueId(), chests);
+        return chests.add(chest);
+    }
 
-	public boolean removeDeathChest(DeathChest dc)
-	{
-		if (dc != null)
-			return deathChests.remove(dc);
-		return false;
-	}
+    public List<DeathChest> getDeathChests(UUID uuid) {
+        return Objects.requireNonNullElse(deathChests.get(uuid), new ArrayList<>());
+    }
 
-	/** Removing all DeathChests (this will drop their contents, just like timeout) */
-	public void removeAllDeathChests()
-	{
-		List<DeathChest> list = new ArrayList<DeathChest>();
-		list.addAll(deathChests);
-		for (DeathChest i : list)
-		{
-			i.remove();
-		}
-		deathChests.clear();
-	}
+    public boolean isBlockDeathChest(Block block) {
+        return block.hasMetadata(DeathChest.METADATA_KEY);
+    }
 
-	public List<Block> getDeathChestBlocks()
-	{
-		List<Block> blocks = new ArrayList<Block>();
-		for (DeathChest i : deathChests)
-		{
-			blocks.add(i.getBlock());
-		}
-		return blocks;
-	}
+    public DeathChest getDeathChest(Block block, UUID playerUUID) {
+        if(playerUUID != null) {
+            return getDeathChests(playerUUID).stream().filter(dc -> dc.getLocation().getBlock().equals(block)).toList().getFirst();
+        }
+        else {
+            for(UUID uuid : deathChests.keySet()) {
+                DeathChest deathChest = getDeathChests(uuid).stream().filter(dc -> dc.getLocation().getBlock().equals(block)).toList().getFirst();
+                if(deathChest != null) {
+                    return deathChest;
+                }
+            }
+        }
+        return null;
+    }
 
-	/** Checks if block is a DeathChest and returns it, otherwise null */
-	public DeathChest getDeathChest(Block block)
-	{
-		if (block.getType().equals(Material.CHEST))
-		{
-			for (DeathChest i : deathChests)
-			{
-				if (i.getBlock().equals(block))
-					return i;
-			}
-		}
-		return null;
-	}
+    public DeathChest getDeathChest(Inventory inventory, UUID playerUUID) {
+        if(playerUUID != null) {
+            return getDeathChests(playerUUID).stream().filter(dc -> dc.getChestInventory().equals(inventory)).toList().getFirst();
+        }
+        else {
+            for(UUID uuid : deathChests.keySet()) {
+                DeathChest deathChest = getDeathChests(uuid).stream().filter(dc -> dc.getChestInventory().equals(inventory)).toList().getFirst();
+                if(deathChest != null) {
+                    return deathChest;
+                }
+            }
+        }
+        return null;
+    }
 
-	/** Checks if inventory belongs to a DeathChest */
-	public boolean isInventoryDeathChest(Inventory inv)
-	{
-		for (DeathChest i : deathChests)
-		{
-			if (i.getChestInventory().equals(inv))
-				return true;
-		}
-		return false;
-	}
+    public String getDeathChestInfoForPlayer(DeathChest deathChest) {
+        return String.format("Position(X: %s, Y: %s, Z: %s) - TTL(%s)",
+                deathChest.getLocation().getX(), deathChest.getLocation().getY(), deathChest.getLocation().getZ(),
+                getTimer() - ((System.currentTimeMillis() - deathChest.getTimeSpawned()) / 1000));
+    }
 
-	/** Gets all DeathChest belonging to Player p */
-	public List<DeathChest> getDeathChestFromPlayer(Player player)
-	{
-		List<DeathChest> dc = new ArrayList<DeathChest>();
-		for (DeathChest i : deathChests)
-		{
-			if (i.checkIfOwner(player))
-				dc.add(i);
+    /**
+     * Creates a DeathChest
+     */
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player p = event.getEntity();
+        if(p.hasPermission("dg.deathChestPermission")) {
+            if(createDeathCest(p, event.getDrops())) {
+                event.getDrops().clear();
+                //TODO: Ausgabe:
+                /*DeathChestManager.sendMessage(owner, "Created at (" + block.getX() + ", " + block.getY() + ", " + block.getZ() + ") T: " + timer / 20 + "s");
+                Bukkit.getConsoleSender().sendMessage("Created Death Chest for " + owner.toString() + " at (" + block.getX() + ", " + block.getY() + ", " + block.getZ() + ")");*/
+            }
+        }
+        else {
+            sendMessage(p, "No permission to create a DeathChest!");
+        }
+    }
 
-		}
-		return dc;
-	}
+    /**
+     * Let a player with according permissions, collect the chest, either by sneak+click or normally opening the chest
+     */
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        if(event.getAction() == Action.RIGHT_CLICK_BLOCK && isBlockDeathChest(event.getClickedBlock())) {
+            Player player = event.getPlayer();
+            DeathChest dc = getDeathChest(event.getClickedBlock(), event.getPlayer().getUniqueId());
+            if(dc != null) {
+                event.setCancelled(true); // To stop the "normal" chest inventory from opening
+                if((dc.checkIfOwner(player.getUniqueId()) && player.hasPermission("dg.deathChestPermission")) || player.hasPermission("dg.deathChestByPassPermission")) {
+                    if(dc.collect()) {
+                        deathChests.get(player.getUniqueId()).remove(dc);
+                        //TODO: Ausgabe:
+                        sendMessage(player, "Collected!");
+                        /*DeathChestManager.sendMessage(owner, "Removed at (" + chestBlock.getX() + ", " + chestBlock.getY() + ", " + chestBlock.getZ() + ")");
+                        Bukkit.getConsoleSender().sendMessage("Removed Death Chest from " + owner.toString() + " at X:" + chestBlock.getLocation().getX() + " Y:" + chestBlock.getLocation().getY()
+                            + " Z:" + chestBlock.getLocation().getZ());*/
+                    }
+                }
+                else {
+                    sendMessage(player, "No permission!");
+                    // sendMessage(dc.getOwner().getUniqueId(), p.getName() + " tried to open your Death Chest at X:" + dc.getBlock().getLocation().getX() + " Y:"
+                    // + dc.getBlock().getLocation().getY() + " Z:" + dc.getBlock().getLocation().getZ());
+                }
+            }
+        }
+    }
 
-	// Protecting DeathChest:
+    /**
+     * Checks if DeathChest is empty and removes it if so
+     */
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        DeathChest deathChest = getDeathChests(event.getPlayer().getUniqueId()).stream()
+                .filter(dc -> dc.getChestInventory().equals(event.getInventory())).toList().getFirst();
+        if(deathChest != null) {
+            deathChest.removeIfEmpty();
+        }
+    }
 
-	/** Preventing player from putting items in the DeathChest */
-	@EventHandler
-	public void onInventoryClick(InventoryClickEvent event)
-	{
-		// Note:
-		// event.getInventory() = DeathChest / Chest
-		// event.getClickedInventory() = DeathChest / Chest or Player (depending on which inv was clicked)
+    // Protecting DeathChest:
 
-		if (isInventoryDeathChest(event.getInventory()))
-		{
-			if ((event.getClickedInventory().getType().equals(InventoryType.PLAYER) && (event.isShiftClick() && event.isLeftClick()))
-					|| (isInventoryDeathChest(event.getClickedInventory()) && !event.getCursor().getType().equals(Material.AIR)))
-			{
-				event.setCancelled(true);
-			}
-		}
-	}
+    /**
+     * Preventing player from putting items in the DeathChest
+     */
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        // Note:
+        // event.getInventory() = DeathChest / Chest
+        // event.getClickedInventory() = DeathChest / Chest or Player (depending on which inv was clicked)
 
-	/** Preventing anyone from breaking the DeathChest */
-	@EventHandler
-	public void onBlockBreak(BlockBreakEvent event)
-	{
-		if (event.getBlock().getType().equals(Material.CHEST))
-		{
-			if (getDeathChest(event.getBlock()) != null)
-				event.setCancelled(true);
-		}
-	}
+        DeathChest dc = getDeathChest(event.getInventory(), event.getWhoClicked().getUniqueId());
+        if(dc != null) {
+            if((event.getClickedInventory().getType().equals(InventoryType.PLAYER) && (event.isShiftClick() && event.isLeftClick()))
+                    || (dc.getChestInventory().equals(event.getClickedInventory()) && !event.getCursor().getType().equals(Material.AIR))) {
+                event.setCancelled(true);
+            }
+        }
+    }
 
-	/** Preventing the DeathChest from being damaged */
-	@EventHandler
-	public void onBlockDamage(BlockDamageEvent event)
-	{
-		if (event.getBlock().getType().equals(Material.CHEST))
-		{
-			if (getDeathChest(event.getBlock()) != null)
-				event.setCancelled(true);
-		}
-	}
+    /**
+     * Preventing anyone from breaking the DeathChest
+     */
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        if(isBlockDeathChest(event.getBlock())) {
+            event.setCancelled(true);
+        }
+    }
 
-	/** Preventing the DeathChest from being blown up by a Creeper, Wither or TNT */
-	@EventHandler
-	public void onEntityExplode(EntityExplodeEvent event)
-	{
-		try
-		{
-			if (event.getEntity() instanceof Creeper || event.getEntity() instanceof TNTPrimed || event.getEntity() instanceof Wither)
-			{
-				event.blockList().removeAll(getDeathChestBlocks());
-			}
-		}
-		catch (Exception e)
-		{
-			Bukkit.getConsoleSender().sendMessage("DC onEntityExplode: " + e.getLocalizedMessage());
-			Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "say DC onEntityExplode: " + e.getLocalizedMessage());
-		}
-	}
+    /**
+     * Preventing the DeathChest from being damaged
+     */
+    @EventHandler
+    public void onBlockDamage(BlockDamageEvent event) {
+        if(isBlockDeathChest(event.getBlock())) {
+            event.setCancelled(true);
+        }
+    }
 
-	/** Preventing anyone(hoppers, etc) than the player from grabbing items from the DeathChest */
-	@EventHandler
-	public void onInventoryMoveItem(InventoryMoveItemEvent event)
-	{
-		if ((isInventoryDeathChest(event.getSource()) && !event.getDestination().getType().equals(InventoryType.PLAYER)) || isInventoryDeathChest(event.getDestination()))
-			event.setCancelled(true);
-	}
+    /**
+     * Preventing the DeathChest from being blown up by a Creeper, Wither or TNT
+     */
+    @EventHandler
+    public void onEntityExplode(EntityExplodeEvent event) {
+        if(event.getEntity() instanceof Creeper || event.getEntity() instanceof TNTPrimed || event.getEntity() instanceof Wither) {
+            event.blockList().removeAll(event.blockList().stream()
+                    .filter(this::isBlockDeathChest).toList());
+        }
+    }
 
-	@Override
-	public boolean onEnable ()
-	{
-		Manager.getInstance().getServer().getPluginManager().registerEvents(this, Manager.getInstance());
-		return true;
-	}
+    /**
+     * Preventing anyone(hoppers, etc.) than the player from grabbing items from the DeathChest
+     */
+    @EventHandler
+    public void onInventoryMoveItem(InventoryMoveItemEvent event) {
+        if((getDeathChest(event.getSource(), null) != null && !event.getDestination().getType().equals(InventoryType.PLAYER))
+                || getDeathChest(event.getDestination(), null) != null) {
+            event.setCancelled(true);
+        }
+    }
 
-	@Override
-	public void onDisable ()
-	{
-		removeAllDeathChests();
-	}
+    @Override
+    public boolean onEnable() {
+        Manager.getInstance().getServer().getPluginManager().registerEvents(this, Manager.getInstance());
+        try {
+            DeathChestCommands dcc = new DeathChestCommands(this);
+            Manager.getInstance().getCommand(DeathChestCommands.CommandStrings.ROOT).setExecutor(dcc);
+            Manager.getInstance().getCommand(DeathChestCommands.CommandStrings.ROOT).setTabCompleter(dcc);
+        } catch(NullPointerException e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            return false;
+        }
+        return true;
+    }
 
-	@Override
-	public String getName ()
-	{
-		return "DeathChest";
-	}
+    @Override
+    public void onDisable() {
+        for(Map.Entry<UUID, List<DeathChest>> entry : deathChests.entrySet()) {
+            for(DeathChest dc : entry.getValue()) {
+                dc.remove(true);
+            }
+        }
+    }
 
-	@Override
-	public void createDefaultConfig (FileConfiguration config)
-	{
-		config.addDefault("DeathChest.DespawnInTicks", 12000);
-		config.addDefault("DeathChest.DespawnDropping", true);
-	}
+    @Override
+    public String getName() {
+        return "DeathChest";
+    }
+
+    @Override
+    public void createDefaultConfig(FileConfiguration config) {
+        config.addDefault(DESPAWN_TIME_JSON_KEY, 600); // 10min
+        config.addDefault(DROP_ITEMS_JSON_KEY, true);
+    }
+
+    public long getTimer() {
+        return timer;
+    }
+
+    public boolean isDropItems() {
+        return dropItems;
+    }
 }

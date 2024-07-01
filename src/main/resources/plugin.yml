@@ -1,86 +1,92 @@
 main: manager.Manager
 name: dasGesetz
-version: 3.6.2
+version: 3.7.0
 api-version: 1.21
 author: MokkaGnom
 description: Das Gesetz. Timber, EasyFarming, DeathChest, BlockLock, Home, Ping
 commands:
-   dgManager:
-      description: Aktiviert/Deaktiviert den CommandStrings
-      usage: /dgManager <command> <0/1>
-      permission: dg.dgManagerPermission
-      aliases:
+  dgManager:
+    description: Aktiviert/Deaktiviert das sub-Plugin
+    usage: /dgManager <plugin> <0/1>
+    permission: dg.dgManagerPermission
+    aliases:
       - dgm
-   dasGesetz:
-      description: Gibt das Gesetz im Chat aus
-      usage: /DasGesetz [Artikel]
-      permission: dg.dasGesetzPermission
-      aliases:
+  dasGesetz:
+    description: Gibt das Gesetz im Chat aus
+    usage: /DasGesetz [Artikel]
+    permission: dg.dasGesetzPermission
+    aliases:
       - dg
-   weatherClear:
-      description: Sets weather to clear
-      usage: /WeatherClear
-      permission: dg.weatherClearPermission
-      aliases:
+  weatherClear:
+    description: Setzt das Wetter auf klar (gleich wie der Standard-Befehl aus mc)
+    usage: /WeatherClear
+    permission: dg.weatherClearPermission
+    aliases:
       - wc
-   coords:
-      description: Return coordinates of player
-      usage: /Coords <Player>
-      permission: dg.coordsPermission
-      aliases:
+  coords:
+    description: Gibt die aktuellen Koordinaten des Spielers
+    usage: /Coords <Player>
+    permission: dg.coordsPermission
+    aliases:
       - co
-   blockLock:
-      description: Manages targeted lockable object
-      usage: /blockLock <lock/unlock/addFriend/removeFriend/addGlobalFriend/removeGlobalFriend/listFriends/showMenu>
-      permission: dg.blockLockPermission
-      aliases:
+  blockLock:
+    description: Verwaltet einen abschließbaren Block
+    usage: /blockLock <lock/unlock/addFriend/removeFriend/addGlobalFriend/removeGlobalFriend/listFriends/showMenu>
+    permission: dg.blockLockPermission
+    aliases:
       - bl
-   home:
-      description: Teleports/creates home
-      usage: /home <tp/add/remove/list> <homeName>
-      permission: dg.homePermission
-      aliases:
+  deathChest:
+    description: Zeigt alle aktiven DeathChests (des Spielers) an
+    usage: /deathChest list
+    permission: dg.deathChestPermission
+    aliases:
+      - dc
+  home:
+    description: Verwalten von Home-Punkten
+    usage: /home <tp/add/remove/list> <homeName>
+    permission: dg.homePermission
+    aliases:
       - h
-   ping:
-      description: Sets color of ping
-      usage: /ping setColor <colorcode>
-      permission: dg.pingPermission
-      aliasses:
+  ping:
+    description: Setzt die Farbe des Pings
+    usage: /ping setColor <colorcode>
+    permission: dg.pingPermission
+    aliases:
       - p
 permissions:
-   dg.dgManagerPermission:
-      description: Allows a Player to use the manager.Manager
-      default: op
-   dg.dasGesetzPermission:
-      description: Allows a Player to use the Law command
-      default: true
-   dg.weatherClearPermission:
-      description: Allows a Player to use the WeaterClear command
-      default: true
-   dg.coordsPermission:
-      description: Allows a Player to use the Coords command
-      default: op
-   dg.timberPermission:
-      description: Allows a Player to use timber
-      default: true
-   dg.deathChestPermission:
-      description: Allows a Player to use/create deathChest
-      default: true
-   dg.deathChestByPassPermission:
-      description: Allows a Player to use deathChest from everyone
-      default: op
-   dg.blockLockPermission:
-      description: Allows a Player to use/create lockable chests, etc.
-      default: true
-   dg.blockLockByPassPermission:
-      description: Allows a Player to use/create lockable chests, etc. from everyone
-      default: op
-   dg.homePermission:
-      description: Allows a Player to use/create homes
-      default: true
-   dg.easyFarmingPermission:
-      description: Allows a Player to use the plugin
-      default: true
-   dg.pingPermission:
-      description: Allows a Player to use the ping
-      default: true
+  dg.dgManagerPermission:
+    description: Allows a Player to use the Manager
+    default: op
+  dg.dasGesetzPermission:
+    description: Allows a Player to use the Law command
+    default: true
+  dg.weatherClearPermission:
+    description: Allows a Player to use the WeaterClear command
+    default: true
+  dg.coordsPermission:
+    description: Allows a Player to use the Coords command
+    default: op
+  dg.timberPermission:
+    description: Allows a Player to use timber
+    default: true
+  dg.deathChestPermission:
+    description: Allows a Player to use/create deathChest
+    default: true
+  dg.deathChestByPassPermission:
+    description: Allows a Player to use deathChest from everyone
+    default: op
+  dg.blockLockPermission:
+    description: Allows a Player to use/create lockable chests, etc.
+    default: true
+  dg.blockLockByPassPermission:
+    description: Allows a Player to use/create lockable chests, etc. from everyone
+    default: op
+  dg.homePermission:
+    description: Allows a Player to use/create homes
+    default: true
+  dg.easyFarmingPermission:
+    description: Allows a Player to use the plugin
+    default: true
+  dg.pingPermission:
+    description: Allows a Player to use the ping
+    default: true
