@@ -32,35 +32,28 @@ public class Manager extends JavaPlugin
      * NICHT BENUTZEN !!!
      * <p>Stattdessen: {@link Manager#getInstance()}</p>
      */
-    public Manager ()
-    {
+    public Manager() {
         this.managerCommands = new ManagerCommands();
     }
 
-    public static Manager getInstance ()
-    {
+    public static Manager getInstance() {
         return instance;
     }
 
     // Benötigt für Artifact-Build
-    public static void main (String[] args)
-    {
+    public static void main(String[] args) {
         System.out.println("ERROR: MAIN CALLED!");
         Bukkit.getLogger().info("ERROR: MAIN CALLED!");
     }
 
-    private void createDefaultConfig ()
-    {
+    private void createDefaultConfig() {
         FileConfiguration config = this.getConfig();
 
-        for (Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet())
-        {
+        for(Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet()) {
             pluginEntry.getKey().createDefaultConfig(config);
-            try
-            {
+            try {
                 config.addDefault(getConfigEntryPath(JSON_PLUGIN_KEY, pluginEntry.getKey().getName()), pluginEntry.getValue());
-            } catch (Exception e)
-            {
+            } catch(Exception e) {
                 Bukkit.getLogger().warning(e.getMessage());
                 Bukkit.getLogger().info(getConfigEntryPath(JSON_PLUGIN_KEY, pluginEntry.getKey().getName()));
             }
@@ -71,8 +64,7 @@ public class Manager extends JavaPlugin
     }
 
     @Override
-    public void onEnable ()
-    {
+    public void onEnable() {
         instance = this;
         this.plugins.put(new BlockLockManager(), true);
         this.plugins.put(new CommandsManager(), true);
@@ -90,13 +82,11 @@ public class Manager extends JavaPlugin
         createDefaultConfig();
 
         Map<ManagedPlugin, Boolean> newPlugins = new HashMap<>();
-        for (Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet())
-        {
+        for(Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet()) {
             boolean enable = this.getConfig().getBoolean(getConfigEntryPath(JSON_PLUGIN_KEY, pluginEntry.getKey().getName()));
             newPlugins.put(pluginEntry.getKey(), enable);
 
-            if (enable)
-            {
+            if(enable) {
                 sendInfoMessage("Enable \"" + pluginEntry.getKey().getName() + "\"...");
                 pluginEntry.getKey().onEnable();
             }
@@ -107,84 +97,72 @@ public class Manager extends JavaPlugin
     }
 
     @Override
-    public void onDisable ()
-    {
+    public void onDisable() {
         managerCommands.onDisable();
 
-        for (Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet())
-        {
-            if (pluginEntry.getValue())
-            {
+        for(Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet()) {
+            if(pluginEntry.getValue()) {
                 pluginEntry.getKey().onDisable();
             }
         }
     }
 
-    public void enablePlugin (ManagedPlugin plugin)
-    {
+    public void enablePlugin(ManagedPlugin plugin) {
         plugin.onEnable();
         this.getConfig().set(getConfigEntryPath(JSON_PLUGIN_KEY, plugin.getName()), true);
     }
 
-    public void disablePlugin (ManagedPlugin plugin)
-    {
+    public void disablePlugin(ManagedPlugin plugin) {
         plugin.onDisable();
         this.getConfig().set(getConfigEntryPath(JSON_PLUGIN_KEY, plugin.getName()), false);
     }
 
-    public Map<ManagedPlugin, Boolean> getPlugins ()
-    {
+    public Map<ManagedPlugin, Boolean> getPlugins() {
         return plugins;
     }
 
-    public static String getConfigEntryPath (String... path)
-    {
+    public static String getConfigEntryPath(String... path) {
         StringBuilder finalPath = new StringBuilder();
-        for (String s : path)
-        {
+        for(String s : path) {
             finalPath.append(s);
             finalPath.append(".");
         }
         return finalPath.toString().substring(0, finalPath.toString().length() - 1);
     }
 
-    public Object getConfigEntry (String... path)
-    {
+    public static long convertSecondsToTicks(double seconds) {
+        return (long) (seconds * (double) Bukkit.getServerTickManager().getTickRate());
+    }
+
+    public Object getConfigEntry(String... path) {
         return getConfig().getString(getConfigEntryPath(path));
     }
 
-    public Object getConfigEntry (String path)
-    {
+    public Object getConfigEntry(String path) {
         return this.getConfig().get(path);
     }
 
-    public void sendErrorMessage (String prefix, String message)
-    {
+    public void sendErrorMessage(String prefix, String message) {
         Bukkit.getLogger().severe(prefix + " " + message);
     }
 
-    public void sendErrorMessage (String message)
-    {
+    public void sendErrorMessage(String message) {
         sendErrorMessage(MESSAGE_PREFIX, message);
     }
 
-    public void sendWarningMessage (String prefix, String message)
-    {
+    public void sendWarningMessage(String prefix, String message) {
         Bukkit.getLogger().warning(prefix + " " + message);
     }
 
-    public void sendWarningMessage (String message)
-    {
+    public void sendWarningMessage(String message) {
         sendWarningMessage(MESSAGE_PREFIX, message);
     }
 
-    public void sendInfoMessage (String prefix, String message)
-    {
+    public void sendInfoMessage(String prefix, String message) {
         Bukkit.getLogger().info(prefix + " " + message);
     }
 
-    public void sendInfoMessage (String message)
-    {
+    public void sendInfoMessage(String message) {
         sendInfoMessage(MESSAGE_PREFIX, message);
     }
 }

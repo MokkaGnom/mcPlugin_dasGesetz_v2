@@ -32,11 +32,11 @@ public class DeathChestCommands implements TabExecutor
             }
             else
             {
-                dcManager.sendMessage(sender, ErrorMessage.UNKNOWN_SYNTAX.getMessage());
+                dcManager.sendMessage(sender, ErrorMessage.UNKNOWN_SYNTAX.message());
             }
         }
         else{
-            dcManager.sendMessage(sender, ErrorMessage.NOT_A_PLAYER.getMessage());
+            dcManager.sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
         }
         return false;
     }

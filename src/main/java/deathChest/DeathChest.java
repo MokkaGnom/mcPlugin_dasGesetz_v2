@@ -23,12 +23,15 @@ public class DeathChest
 {
     public static final Material DEATH_CHEST_MATERIAL = Material.CHEST;
     public static final String METADATA_KEY = "DeathChest";
+    public static final String CHEST_NAME = "%s's Deathchest";
+    public static final int METADATA_ID_INDEX = 0;
 
     private final long timeSpawned;
     private final Material oldMaterial;
     private final Location location;
-    private Inventory inventory;
+    private final Inventory inventory;
     private final UUID owner;
+    private int taskID;
 
     public DeathChest(Player p, List<ItemStack> items) {
         this.owner = p.getUniqueId();
@@ -41,8 +44,9 @@ public class DeathChest
             block = block.getChunk().getBlock(block.getX() & 15, block.getY() + 1, block.getZ() & 15);
         }
         this.oldMaterial = block.getType();
-        block.setType(DEATH_CHEST_MATERIAL);
         this.location = block.getLocation();
+        block.setType(DEATH_CHEST_MATERIAL);
+        block.setMetadata(METADATA_KEY, new FixedMetadataValue(Manager.getInstance(), hashCode()));
 
         // Creating ArmorStand for visualisation:
         ArmorStand armorStand = (ArmorStand) block.getWorld().spawnEntity(block.getLocation().add(0.5, 0, 0.5), EntityType.ARMOR_STAND);
@@ -54,12 +58,12 @@ public class DeathChest
         armorStand.setGravity(false);
         armorStand.setSmall(true);
         armorStand.setCustomNameVisible(true);
-        armorStand.setCustomName(p.getName() + "'s Deathchest");
-        armorStand.setMetadata(METADATA_KEY, new FixedMetadataValue(Manager.getInstance(), block.getLocation().toString()));
+        armorStand.setCustomName(String.format(CHEST_NAME, p.getName()));
+        armorStand.setMetadata(METADATA_KEY, new FixedMetadataValue(Manager.getInstance(), hashCode()));
 
         // Creating Inventory:
         //TODO: Evtl. kann man den owner auf die DeathChest (den Block) setzen und damit das eigentliche Inventar der Kiste überschreiben
-        inventory = Bukkit.createInventory(null, (int) Math.nextUp(items.size() / 9.0d) * 9, p.getName() + "'s Deathchest");
+        inventory = Bukkit.createInventory(null, (int) Math.ceil(items.size() / 9.0d) * 9, String.format(CHEST_NAME, p.getName()));
         for(ItemStack i : items) {
             inventory.addItem(i);
         }
@@ -74,7 +78,7 @@ public class DeathChest
 
     @Override
     public int hashCode() {
-        return Objects.hash(oldMaterial, location, owner);
+        return Objects.hash(oldMaterial, location.getX(), location.getY(), location.getZ(), owner, timeSpawned);
     }
 
     @Override
@@ -85,9 +89,15 @@ public class DeathChest
                 ", location=" + location +
                 ", inventory=" + inventory +
                 ", owner=" + owner +
+                ", taskID=" + taskID +
+                ", id=" + hashCode() +
                 '}';
     }
 
+    /**
+     *
+     * @return Ob Inventar leer
+     */
     public boolean collect() {
         Player player = Bukkit.getServer().getPlayer(owner);
         if(player == null) {
@@ -101,7 +111,6 @@ public class DeathChest
                     continue;
 
                 HashMap<Integer, ItemStack> drop = player.getInventory().addItem(i);
-                player.updateInventory();
 
                 for(Entry<Integer, ItemStack> entry : drop.entrySet()) {
                     if(entry.getValue().getAmount() > 0) {
@@ -122,22 +131,22 @@ public class DeathChest
         else {
             player.openInventory(inventory);
         }
-        return removeIfEmpty();
+        return inventory.isEmpty();
     }
 
     public boolean removeIfEmpty() {
-
         return ((!location.getBlock().getType().equals(DEATH_CHEST_MATERIAL) || inventory.isEmpty()) && remove(true));
     }
 
     public boolean remove(boolean dropItems) {
         Block block = location.getBlock();
-        if(block.getType().equals(DEATH_CHEST_MATERIAL)) {
+        List<MetadataValue> metadataChestList = block.getMetadata(METADATA_KEY);
+        if(metadataChestList.size() > METADATA_ID_INDEX && metadataChestList.get(METADATA_ID_INDEX).asInt() == hashCode()) {
             // Entfernen des Armorstands
             for(Entity i : block.getChunk().getEntities()) {
                 if(i instanceof ArmorStand) {
-                    MetadataValue metadata = i.getMetadata(METADATA_KEY).get(0);
-                    if(metadata != null && metadata.asString().equals(location.toString())) {
+                    List<MetadataValue> metadataArmorstandList = i.getMetadata(METADATA_KEY);
+                    if(metadataArmorstandList.size() > METADATA_ID_INDEX && metadataArmorstandList.get(METADATA_ID_INDEX).asInt() == hashCode()) {
                         i.remove();
                         break;
                     }
@@ -146,11 +155,14 @@ public class DeathChest
 
             if(dropItems) {
                 for(ItemStack i : inventory.getContents()) {
-                    location.getWorld().dropItem(location, i);
+                    if(i != null) {
+                        location.getWorld().dropItem(location, i);
+                    }
                 }
             }
             inventory.clear();
             block.setType(oldMaterial);
+            block.removeMetadata(METADATA_KEY, Manager.getInstance());
             return true;
         }
         return false;
@@ -174,5 +186,13 @@ public class DeathChest
 
     public long getTimeSpawned() {
         return timeSpawned;
+    }
+
+    public int getTaskID() {
+        return taskID;
+    }
+
+    public void setTaskID(int taskID) {
+        this.taskID = taskID;
     }
 }

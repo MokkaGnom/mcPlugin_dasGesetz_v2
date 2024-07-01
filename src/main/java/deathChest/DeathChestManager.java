@@ -28,6 +28,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import utility.ErrorMessage;
 
 import java.util.*;
 
@@ -45,14 +46,23 @@ public class DeathChestManager implements Listener, ManagedPlugin
      */
     private final boolean dropItems;
 
+    private final boolean messagePlayer;
+
     /**
      * Alle DeathChests, nach Spieler-UUID gemappt
      */
     private final Map<UUID, List<DeathChest>> deathChests;
 
+    private static final String DESPAWN_TIME_JSON_KEY = "DeathChest.DespawnInSeconds";
+    private static final String DROP_ITEMS_JSON_KEY = "DeathChest.DespawnDropping";
+    private static final String MESSAGE_TO_PLAYER_JSON_KEY = "DeathChest.MessagePlayer";
+    private final String DEATHCHEST_PERMISSION = "dg.deathChestPermission";
+    private final String DEATHCHEST_BYPASS_PERMISSION = "dg.deathChestByPassPermission";
+
     public DeathChestManager() {
         this.timer = Manager.getInstance().getConfig().getInt(DESPAWN_TIME_JSON_KEY);
         this.dropItems = Manager.getInstance().getConfig().getBoolean(DROP_ITEMS_JSON_KEY);
+        this.messagePlayer = Manager.getInstance().getConfig().getBoolean(MESSAGE_TO_PLAYER_JSON_KEY);
         deathChests = new HashMap<>();
     }
 
@@ -87,12 +97,34 @@ public class DeathChestManager implements Listener, ManagedPlugin
         return false;
     }
 
-    public boolean createDeathCest(Player player, List<ItemStack> items) {
+    public DeathChest createDeathCest(Player player, List<ItemStack> items) {
         List<DeathChest> chests = Objects.requireNonNullElse(deathChests.get(player.getUniqueId()), new ArrayList<>());
         DeathChest chest = new DeathChest(player, items);
-        Bukkit.getScheduler().runTaskLater(Manager.getInstance(), () -> chest.remove(dropItems), timer);
+        chest.setTaskID(Bukkit.getScheduler().runTaskLater(
+                Manager.getInstance(), () -> removeDeathChest(chest, false, false), Manager.convertSecondsToTicks(timer)
+        ).getTaskId());
+        chests.add(chest);
         deathChests.put(player.getUniqueId(), chests);
-        return chests.add(chest);
+        return chest;
+    }
+
+    public boolean removeDeathChest(DeathChest chest, boolean onlyIfEmpty){
+        return removeDeathChest(chest, onlyIfEmpty, true);
+    }
+
+    public boolean removeDeathChest(DeathChest chest, boolean onlyIfEmpty, boolean cancelRemoveTask) {
+        boolean removed = (onlyIfEmpty ? chest.removeIfEmpty() : chest.remove(dropItems));
+        if(removed) {
+            if(cancelRemoveTask)
+            {
+                Bukkit.getScheduler().cancelTask(chest.getTaskID());
+            }
+            sendMessage(Bukkit.getPlayer(chest.getOwner()), String.format(COLLECTED_PLAYER_MESSAGE));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(COLLECTED_SERVER_MESSAGE, chest.toString()));
+            deathChests.get(chest.getOwner()).remove(chest);
+            return true;
+        }
+        return false;
     }
 
     public List<DeathChest> getDeathChests(UUID uuid) {
@@ -105,13 +137,16 @@ public class DeathChestManager implements Listener, ManagedPlugin
 
     public DeathChest getDeathChest(Block block, UUID playerUUID) {
         if(playerUUID != null) {
-            return getDeathChests(playerUUID).stream().filter(dc -> dc.getLocation().getBlock().equals(block)).toList().getFirst();
+            List<DeathChest> chests = getDeathChests(playerUUID).stream().filter(dc -> dc.getLocation().getBlock().equals(block)).toList();
+            if(!chests.isEmpty()) {
+                return chests.getFirst();
+            }
         }
         else {
             for(UUID uuid : deathChests.keySet()) {
-                DeathChest deathChest = getDeathChests(uuid).stream().filter(dc -> dc.getLocation().getBlock().equals(block)).toList().getFirst();
-                if(deathChest != null) {
-                    return deathChest;
+                List<DeathChest> deathChests = getDeathChests(uuid).stream().filter(dc -> dc.getLocation().getBlock().equals(block)).toList();
+                if(!deathChests.isEmpty()) {
+                    return deathChests.getFirst();
                 }
             }
         }
@@ -120,13 +155,16 @@ public class DeathChestManager implements Listener, ManagedPlugin
 
     public DeathChest getDeathChest(Inventory inventory, UUID playerUUID) {
         if(playerUUID != null) {
-            return getDeathChests(playerUUID).stream().filter(dc -> dc.getChestInventory().equals(inventory)).toList().getFirst();
+            List<DeathChest> chests = getDeathChests(playerUUID).stream().filter(dc -> dc.getChestInventory().equals(inventory)).toList();
+            if(!chests.isEmpty()) {
+                return chests.getFirst();
+            }
         }
         else {
             for(UUID uuid : deathChests.keySet()) {
-                DeathChest deathChest = getDeathChests(uuid).stream().filter(dc -> dc.getChestInventory().equals(inventory)).toList().getFirst();
-                if(deathChest != null) {
-                    return deathChest;
+                List<DeathChest> deathChests = getDeathChests(uuid).stream().filter(dc -> dc.getChestInventory().equals(inventory)).toList();
+                if(!deathChests.isEmpty()) {
+                    return deathChests.getFirst();
                 }
             }
         }
@@ -134,7 +172,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
     }
 
     public String getDeathChestInfoForPlayer(DeathChest deathChest) {
-        return String.format("Position(X: %s, Y: %s, Z: %s) - TTL(%s)",
+        return String.format(INFO_FOR_PLAYER,
                 deathChest.getLocation().getX(), deathChest.getLocation().getY(), deathChest.getLocation().getZ(),
                 getTimer() - ((System.currentTimeMillis() - deathChest.getTimeSpawned()) / 1000));
     }
@@ -145,16 +183,16 @@ public class DeathChestManager implements Listener, ManagedPlugin
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player p = event.getEntity();
-        if(p.hasPermission("dg.deathChestPermission")) {
-            if(createDeathCest(p, event.getDrops())) {
+        if(p.hasPermission(DEATHCHEST_PERMISSION)) {
+            DeathChest dc = createDeathCest(p, event.getDrops());
+            if(dc != null) {
                 event.getDrops().clear();
-                //TODO: Ausgabe:
-                /*DeathChestManager.sendMessage(owner, "Created at (" + block.getX() + ", " + block.getY() + ", " + block.getZ() + ") T: " + timer / 20 + "s");
-                Bukkit.getConsoleSender().sendMessage("Created Death Chest for " + owner.toString() + " at (" + block.getX() + ", " + block.getY() + ", " + block.getZ() + ")");*/
+                sendMessage(p, String.format(CREATED_PLAYER_MESSAGE, dc.getLocation().getX(), dc.getLocation().getY(), dc.getLocation().getZ(), timer));
+                Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(CREATED_SERVER_MESSAGE, dc.toString()));
             }
         }
         else {
-            sendMessage(p, "No permission to create a DeathChest!");
+            sendMessage(p, ERROR_NO_PERMISSION_CREATE);
         }
     }
 
@@ -168,20 +206,16 @@ public class DeathChestManager implements Listener, ManagedPlugin
             DeathChest dc = getDeathChest(event.getClickedBlock(), event.getPlayer().getUniqueId());
             if(dc != null) {
                 event.setCancelled(true); // To stop the "normal" chest inventory from opening
-                if((dc.checkIfOwner(player.getUniqueId()) && player.hasPermission("dg.deathChestPermission")) || player.hasPermission("dg.deathChestByPassPermission")) {
+                if((dc.checkIfOwner(player.getUniqueId()) && player.hasPermission(DEATHCHEST_PERMISSION)) || player.hasPermission(DEATHCHEST_BYPASS_PERMISSION)) {
                     if(dc.collect()) {
-                        deathChests.get(player.getUniqueId()).remove(dc);
-                        //TODO: Ausgabe:
-                        sendMessage(player, "Collected!");
-                        /*DeathChestManager.sendMessage(owner, "Removed at (" + chestBlock.getX() + ", " + chestBlock.getY() + ", " + chestBlock.getZ() + ")");
-                        Bukkit.getConsoleSender().sendMessage("Removed Death Chest from " + owner.toString() + " at X:" + chestBlock.getLocation().getX() + " Y:" + chestBlock.getLocation().getY()
-                            + " Z:" + chestBlock.getLocation().getZ());*/
+                        removeDeathChest(dc, false);
                     }
                 }
                 else {
-                    sendMessage(player, "No permission!");
-                    // sendMessage(dc.getOwner().getUniqueId(), p.getName() + " tried to open your Death Chest at X:" + dc.getBlock().getLocation().getX() + " Y:"
-                    // + dc.getBlock().getLocation().getY() + " Z:" + dc.getBlock().getLocation().getZ());
+                    sendMessage(player, ErrorMessage.NO_PERMISSION.message());
+                    if(this.messagePlayer) {
+                        sendMessage(Bukkit.getPlayer(dc.getOwner()), String.format(COLLECT_STEAL_MESSAGE_TO_OWNER, player.getName(), dc.getLocation().getX(), dc.getLocation().getY(), dc.getLocation().getZ()));
+                    }
                 }
             }
         }
@@ -192,10 +226,10 @@ public class DeathChestManager implements Listener, ManagedPlugin
      */
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        DeathChest deathChest = getDeathChests(event.getPlayer().getUniqueId()).stream()
-                .filter(dc -> dc.getChestInventory().equals(event.getInventory())).toList().getFirst();
-        if(deathChest != null) {
-            deathChest.removeIfEmpty();
+        List<DeathChest> deathChestList = getDeathChests(event.getPlayer().getUniqueId()).stream()
+                .filter(dc -> dc.getChestInventory().equals(event.getInventory())).toList();
+        if(!deathChestList.isEmpty()) {
+            removeDeathChest(deathChestList.getFirst(), true);
         }
     }
 
@@ -293,6 +327,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
     public void createDefaultConfig(FileConfiguration config) {
         config.addDefault(DESPAWN_TIME_JSON_KEY, 600); // 10min
         config.addDefault(DROP_ITEMS_JSON_KEY, true);
+        config.addDefault(MESSAGE_TO_PLAYER_JSON_KEY, false);
     }
 
     public long getTimer() {

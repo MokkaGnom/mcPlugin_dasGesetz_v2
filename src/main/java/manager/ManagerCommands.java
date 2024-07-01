@@ -32,7 +32,7 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
 
             if (foundPluginList.isEmpty())
             {
-                sender.sendMessage(ErrorMessage.UNKNOWN_PLUGIN.getMessage());
+                sender.sendMessage(ErrorMessage.UNKNOWN_PLUGIN.message());
                 return false;
             }
 
@@ -51,7 +51,7 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
             return true;
         } else
         {
-            sender.sendMessage(ErrorMessage.UNKNOWN_SYNTAX.getMessage());
+            sender.sendMessage(ErrorMessage.UNKNOWN_SYNTAX.message());
             return false;
         }
     }

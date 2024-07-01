@@ -18,6 +18,9 @@ import static home.HomeConstants.*;
 
 public class HomeManager implements ManagedPlugin
 {
+    private static final String MAX_HOMES_JSON_KEY = "MaxHomes";
+    private static final String MAX_CREATE_DISTANCE_JSON_KEY = "MaxCreateDistance";
+
     public final int MAX_HOMES = Manager.getInstance().getConfig().getInt(Manager.getInstance().getConfigEntryPath(getName(), MAX_HOMES_JSON_KEY));
     public final int MAX_BLOCK_DISTANCE = Manager.getInstance().getConfig().getInt(Manager.getInstance().getConfigEntryPath(getName(), MAX_CREATE_DISTANCE_JSON_KEY));
     private final File SAVE_FILE = new File(Manager.getInstance().getDataFolder(), getName() + ".yml");
