@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.entity.Wither;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -108,15 +109,14 @@ public class DeathChestManager implements Listener, ManagedPlugin
         return chest;
     }
 
-    public boolean removeDeathChest(DeathChest chest, boolean onlyIfEmpty){
+    public boolean removeDeathChest(DeathChest chest, boolean onlyIfEmpty) {
         return removeDeathChest(chest, onlyIfEmpty, true);
     }
 
     public boolean removeDeathChest(DeathChest chest, boolean onlyIfEmpty, boolean cancelRemoveTask) {
         boolean removed = (onlyIfEmpty ? chest.removeIfEmpty() : chest.remove(dropItems));
         if(removed) {
-            if(cancelRemoveTask)
-            {
+            if(cancelRemoveTask) {
                 Bukkit.getScheduler().cancelTask(chest.getTaskID());
             }
             sendMessage(Bukkit.getPlayer(chest.getOwner()), String.format(COLLECTED_PLAYER_MESSAGE));
@@ -315,6 +315,13 @@ public class DeathChestManager implements Listener, ManagedPlugin
             for(DeathChest dc : entry.getValue()) {
                 dc.remove(true);
             }
+        }
+        HandlerList.unregisterAll(this);
+        try {
+            Manager.getInstance().getCommand(DeathChestCommands.CommandStrings.ROOT).setExecutor(null);
+            Manager.getInstance().getCommand(DeathChestCommands.CommandStrings.ROOT).setTabCompleter(null);
+        } catch(NullPointerException e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
         }
     }
 

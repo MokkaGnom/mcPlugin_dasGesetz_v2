@@ -4,6 +4,7 @@ import manager.ManagedPlugin;
 import manager.Manager;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
@@ -30,6 +31,7 @@ public class Messages implements Listener, ManagedPlugin
 
     @Override
     public void onDisable() {
+        HandlerList.unregisterAll(this);
     }
 
     @Override

@@ -36,6 +36,7 @@ public class HomeManager implements ManagedPlugin
 
     /**
      * Damit man beim teleportieren mittig auf dem Block landet
+     *
      * @param loc Der ursprungs Ort
      * @return Der neue Ort
      */
@@ -179,6 +180,12 @@ public class HomeManager implements ManagedPlugin
     @Override
     public void onDisable() {
         saveToFile();
+        try {
+            Manager.getInstance().getCommand(HomeCommands.CommandStrings.ROOT).setExecutor(null);
+            Manager.getInstance().getCommand(HomeCommands.CommandStrings.ROOT).setTabCompleter(null);
+        } catch(NullPointerException e) {
+            Manager.getInstance().sendErrorMessage(e.getMessage());
+        }
     }
 
     @Override
