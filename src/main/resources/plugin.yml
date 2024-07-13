@@ -53,6 +53,12 @@ commands:
     permission: dg.pingPermission
     aliases:
       - p
+  blockLogger:
+    description: Verwaltet geloggte Blöcke
+    usage: /blockLogger <list/add/remove> <material>
+    permission: dg.blockLoggerPerm
+    aliases:
+      - blog
 permissions:
   dg.dgManagerPermission:
     description: Allows a Player to use the Manager
@@ -90,3 +96,6 @@ permissions:
   dg.pingPermission:
     description: Allows a Player to use the ping
     default: true
+  dg.blockLoggerPerm:
+    description: Allows a Player to add/remove/list logged blocks
+    default: op

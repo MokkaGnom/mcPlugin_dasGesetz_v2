@@ -1,27 +1,37 @@
 package commands;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Player;
+import utility.ErrorMessage;
+
+import java.util.List;
 
 public class WeatherClear implements TabExecutor
 {
-	public static final String COMMAND = "weatherClear";
+    public static final String COMMAND = "weatherClear";
+    public static final String PERMISSION = "dg.weatherClearPermission";
 
-	@Override
-	public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
-	{
-		Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "weather clear");
-		return true;
-	}
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if(!sender.hasPermission(PERMISSION)) {
+            sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
+            return true;
+        }
 
-	@Override
-	public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args)
-	{
-		return Arrays.asList("");
-	}
+        if(!(sender instanceof Player)) {
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.message());
+            return true;
+        }
+
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "weather clear");
+        return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+        return ErrorMessage.COMMAND_NO_OPTION_AVAILABLE;
+    }
 }

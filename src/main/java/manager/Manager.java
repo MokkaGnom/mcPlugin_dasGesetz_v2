@@ -1,15 +1,17 @@
 package manager;
 
 import blockLock.BlockLockManager;
+import blockLogger.BlockLoggerManager;
 import commands.CommandsManager;
 import deathChest.DeathChestManager;
 import farming.EasyFarming;
 import farming.Timber;
 import home.HomeManager;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import other.BlockLogger;
+import blockLogger.BlockLogger;
 import other.Messages;
 import ping.PingManager;
 
@@ -72,7 +74,7 @@ public class Manager extends JavaPlugin
         this.plugins.put(new EasyFarming(), true);
         this.plugins.put(new Timber(), true);
         this.plugins.put(new HomeManager(), true);
-        this.plugins.put(new BlockLogger(), true);
+        this.plugins.put(new BlockLoggerManager(), true);
         this.plugins.put(new Messages(), true);
         this.plugins.put(new PingManager(), true);
 

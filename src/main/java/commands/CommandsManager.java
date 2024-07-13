@@ -3,7 +3,6 @@ package commands;
 import manager.ManagedPlugin;
 import manager.Manager;
 import org.bukkit.command.TabExecutor;
-import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.Map;
 
@@ -15,27 +14,21 @@ public class CommandsManager implements ManagedPlugin
             DasGesetz.COMMAND, new DasGesetz()
     );
 
-    public CommandsManager ()
-    {
+    public CommandsManager() {
     }
 
-    public Map<String, TabExecutor> getExecutors ()
-    {
+    public Map<String, TabExecutor> getExecutors() {
         return executors;
     }
 
     @Override
-    public boolean onEnable ()
-    {
-        for (Map.Entry<String, TabExecutor> entry : executors.entrySet())
-        {
-            try
-            {
+    public boolean onEnable() {
+        for(Map.Entry<String, TabExecutor> entry : executors.entrySet()) {
+            try {
                 Manager.getInstance().getCommand(entry.getKey()).setExecutor(entry.getValue());
                 Manager.getInstance().getCommand(entry.getKey()).setTabCompleter(entry.getValue());
-            } catch (NullPointerException e)
-            {
-                Manager.getInstance().sendErrorMessage(e.getMessage());
+            } catch(NullPointerException e) {
+                Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
                 return false;
             }
         }
@@ -43,18 +36,18 @@ public class CommandsManager implements ManagedPlugin
     }
 
     @Override
-    public void onDisable ()
-    {
+    public void onDisable() {
+        for(Map.Entry<String, TabExecutor> entry : executors.entrySet()) {
+            try {
+                Manager.getInstance().getCommand(entry.getKey()).setExecutor(null);
+            } catch(NullPointerException e) {
+                Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            }
+        }
     }
 
     @Override
-    public String getName ()
-    {
+    public String getName() {
         return "Commands";
-    }
-
-    @Override
-    public void createDefaultConfig (FileConfiguration config)
-    {
     }
 }
