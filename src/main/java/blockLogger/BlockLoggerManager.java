@@ -130,5 +130,6 @@ public class BlockLoggerManager implements ManagedPlugin
     @Override
     public void createDefaultConfig(FileConfiguration config) {
         config.addDefault(LOGGED_BLOCKS_JSON_KEY, List.of(Material.SWEET_BERRY_BUSH.name()));
+        config.setInlineComments(LOGGED_BLOCKS_JSON_KEY, List.of("Blöcke, welche gelogged werden sollen"));
     }
 }

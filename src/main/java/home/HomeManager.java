@@ -18,11 +18,11 @@ import static home.HomeConstants.*;
 
 public class HomeManager implements ManagedPlugin
 {
-    private static final String MAX_HOMES_JSON_KEY = "MaxHomes";
-    private static final String MAX_CREATE_DISTANCE_JSON_KEY = "MaxCreateDistance";
+    private static final String MAX_HOMES_JSON_KEY = "Homes.MaxHomes";
+    private static final String MAX_CREATE_DISTANCE_JSON_KEY = "Homes.MaxCreateDistance";
 
-    public final int MAX_HOMES = Manager.getInstance().getConfig().getInt(Manager.getInstance().getConfigEntryPath(getName(), MAX_HOMES_JSON_KEY));
-    public final int MAX_BLOCK_DISTANCE = Manager.getInstance().getConfig().getInt(Manager.getInstance().getConfigEntryPath(getName(), MAX_CREATE_DISTANCE_JSON_KEY));
+    public final int MAX_HOMES = Manager.getInstance().getConfig().getInt(MAX_HOMES_JSON_KEY);
+    public final int MAX_BLOCK_DISTANCE = Manager.getInstance().getConfig().getInt(MAX_CREATE_DISTANCE_JSON_KEY);
     private final File SAVE_FILE = new File(Manager.getInstance().getDataFolder(), getName() + ".yml");
     private final Map<UUID, Map<String, Location>> homes = new HashMap<>();
     private final FileConfiguration saveConfigFile = YamlConfiguration.loadConfiguration(SAVE_FILE);
@@ -195,7 +195,9 @@ public class HomeManager implements ManagedPlugin
 
     @Override
     public void createDefaultConfig(FileConfiguration config) {
-        config.addDefault(Manager.getInstance().getConfigEntryPath(getName(), MAX_HOMES_JSON_KEY), 5);
-        config.addDefault(Manager.getInstance().getConfigEntryPath(getName(), MAX_CREATE_DISTANCE_JSON_KEY), 10);
+        config.addDefault(MAX_HOMES_JSON_KEY, 5);
+        config.setInlineComments(MAX_HOMES_JSON_KEY, List.of("Wie viele Homes ein Spieler maximal haben darf"));
+        config.addDefault(MAX_CREATE_DISTANCE_JSON_KEY, 10);
+        config.setInlineComments(MAX_CREATE_DISTANCE_JSON_KEY, List.of("Wie weit ein Spieler maximal von dem Block zum erstellen entfernt sein darf"));
     }
 }

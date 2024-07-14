@@ -8,6 +8,8 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
+import java.util.List;
+
 public class Messages implements Listener, ManagedPlugin
 {
     public static final String MESSAGE_JSON_KEY = "Messages.Message";
@@ -42,5 +44,6 @@ public class Messages implements Listener, ManagedPlugin
     @Override
     public void createDefaultConfig(FileConfiguration config) {
         config.addDefault(MESSAGE_JSON_KEY, "Check out the plugin: https://github.com/MokkaGnom/mcPlugin_dasGesetz_v2");
+        config.setInlineComments(MESSAGE_JSON_KEY, List.of("Die Nachricht, welche einem Spieler angezeigt werden soll, wenn er joined"));
     }
 }
