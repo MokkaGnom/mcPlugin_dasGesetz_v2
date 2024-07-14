@@ -333,7 +333,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
     @Override
     public void createDefaultConfig(FileConfiguration config) {
         config.addDefault(DESPAWN_TIME_JSON_KEY, 600); // 10min
-        config.setInlineComments(DESPAWN_TIME_JSON_KEY, List.of("Zeit, bis die DeathChest automatisch despawned (in Ticks)"));
+        config.setInlineComments(DESPAWN_TIME_JSON_KEY, List.of("Zeit, bis die DeathChest automatisch despawned (in Sekunden)"));
         config.addDefault(DROP_ITEMS_JSON_KEY, true);
         config.setInlineComments(DROP_ITEMS_JSON_KEY, List.of("Ob die Items gedropped werden sollen, wenn die DeathChest despawned"));
         config.addDefault(MESSAGE_TO_PLAYER_JSON_KEY, false);
