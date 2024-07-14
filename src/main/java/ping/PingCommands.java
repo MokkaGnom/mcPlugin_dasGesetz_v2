@@ -1,91 +1,73 @@
 package ping;
 
-import java.util.Arrays;
 import java.util.List;
 
+import net.md_5.bungee.api.ChatColor;
+import org.bukkit.Color;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 
-import net.md_5.bungee.api.ChatColor;
+import utility.ErrorMessage;
 
 public class PingCommands implements TabExecutor
 {
-    public static final String COMMAND = "ping";
+    public static final String SUCCESSFULLY_CHANGED_COLOR = "Successfully changed color";
 
-    private PingManager pingManager;
-
-    public PingCommands(PingManager pm)
+    public interface CommandStrings
     {
-        pingManager = pm;
+        String ROOT = "ping";
+        String SET = "setColor";
+
+        List<String> FIRST_ARGUMENTS = List.of(SET);
+        List<String> SECOND_ARGUMENTS = List.of("000000", "FFB7C5", "FFFFFF");
     }
 
-    static int getValueOfHex(char high, char low)
-    {
-        int value = 0;
-        char[] hex = new char[2];
-        hex[0] = high;
-        hex[1] = low;
+    private final PingManager pm;
 
-        for (int i = 0; i < 2; i++, value *= 10)
-        {
-            if (hex[i] >= 48 && hex[i] <= 57)
-            {
-                value += hex[i] - 48;
-            }
-            else
-            {
-                if (hex[i] == 'A' || hex[i] == 'a')
-                    value += 10;
-                else if (hex[i] == 'B' || hex[i] == 'b')
-                    value += 11;
-                else if (hex[i] == 'C' || hex[i] == 'c')
-                    value += 12;
-                else if (hex[i] == 'D' || hex[i] == 'd')
-                    value += 13;
-                else if (hex[i] == 'E' || hex[i] == 'e')
-                    value += 14;
-                else if (hex[i] == 'F' || hex[i] == 'f')
-                    value += 15;
-                else
-                    return -1;
-            }
-
-        }
-        return value / 10;
+    public PingCommands(PingManager pm) {
+        this.pm = pm;
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
-    {
-        if (args.length == 2 && args[0].equalsIgnoreCase("setColor") && args[1].length() == 6)
-        {
-            if (getValueOfHex(args[1].charAt(0), args[1].charAt(1)) != -1 && getValueOfHex(args[1].charAt(2), args[1].charAt(3)) != -1
-                    && getValueOfHex(args[1].charAt(4), args[1].charAt(5)) != -1)
-            {
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if(!(sender instanceof Player)) {
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.message());
+            return true;
+        }
 
-                pingManager.setPlayerColor((Player) sender, args[1]);
-                sender.sendMessage(ChatColor.of("#" + args[1]) + "Successfully changed color");
+        if(!sender.hasPermission(PingManager.PERMISSION)) {
+            sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
+            return true;
+        }
+
+        if(args.length == 2 && args[0].equalsIgnoreCase(CommandStrings.SET) && args[1].length() == 6) {
+            Color color = PingManager.getColorFromHexString(args[1]);
+            if(color != null) {
+                pm.setPlayerColor((Player) sender, args[1]);
+                sender.sendMessage(pm.getMessageString(ChatColor.of("#" + args[1]) + SUCCESSFULLY_CHANGED_COLOR));
                 return true;
             }
-            return false;
+            sender.sendMessage(ErrorMessage.UNKNOWN_ARGUMENT.message());
         }
-        else
-        {
-            return false;
+        else {
+            sender.sendMessage(ErrorMessage.UNKNOWN_SYNTAX.message());
         }
+        return false;
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args)
-    {
-        if (args.length == 1)
-            return Arrays.asList("setColor");
-        else if (args.length == 2)
-            return Arrays.asList("000000", "FFB7C5", "FFFFFF");
-        else
-            return Arrays.asList("");
+    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+        if(args.length == 1) {
+            return CommandStrings.FIRST_ARGUMENTS;
+        }
+        else if(args.length == 2) {
+            return CommandStrings.SECOND_ARGUMENTS;
+        }
+        else {
+            return ErrorMessage.COMMAND_NO_OPTION_AVAILABLE;
+        }
     }
 
 }
