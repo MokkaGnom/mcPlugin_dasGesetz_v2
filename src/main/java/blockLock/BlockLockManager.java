@@ -24,6 +24,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.permissions.Permissible;
 import org.bukkit.plugin.java.JavaPlugin;
 
 // Java:
@@ -543,6 +544,11 @@ public class BlockLockManager implements Listener, ManagedPlugin
 		{
 			event.setCancelled(true);
 		}
+	}
+
+	@Override
+	public boolean hasPermission(Permissible permissible) {
+		return false;
 	}
 
 	@Override

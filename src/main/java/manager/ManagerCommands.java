@@ -3,6 +3,7 @@ package manager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.permissions.Permissible;
 import utility.ErrorMessage;
 
 import java.util.List;
@@ -67,6 +68,11 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
             return Stream.concat(PLUGIN_DISABLE_STRINGS.stream(), PLUGIN_ENABLE_STRINGS.stream()).collect(Collectors.toList());
         }
         return ErrorMessage.COMMAND_NO_OPTION_AVAILABLE;
+    }
+
+    @Override
+    public boolean hasPermission(Permissible permissible) {
+        return permissible.hasPermission("dg.dgManagerPermission");
     }
 
     @Override

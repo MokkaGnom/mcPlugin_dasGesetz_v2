@@ -8,6 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.HandlerList;
+import org.bukkit.permissions.Permissible;
 
 import java.io.File;
 import java.util.HashMap;
@@ -85,6 +86,11 @@ public class BlockLoggerManager implements ManagedPlugin
 
     public Set<Material> getBlockLoggerMaterials() {
         return this.blockLoggerMap.keySet();
+    }
+
+    @Override
+    public boolean hasPermission(Permissible permissible) {
+        return permissible.hasPermission("dg.blockLoggerPerm");
     }
 
     @Override

@@ -29,6 +29,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.permissions.Permissible;
 import utility.ErrorMessage;
 
 import java.util.*;
@@ -57,8 +58,6 @@ public class DeathChestManager implements Listener, ManagedPlugin
     private static final String DESPAWN_TIME_JSON_KEY = "DeathChest.DespawnInSeconds";
     private static final String DROP_ITEMS_JSON_KEY = "DeathChest.DespawnDropping";
     private static final String MESSAGE_TO_PLAYER_JSON_KEY = "DeathChest.MessagePlayer";
-    private final String DEATHCHEST_PERMISSION = "dg.deathChestPermission";
-    private final String DEATHCHEST_BYPASS_PERMISSION = "dg.deathChestByPassPermission";
 
     public DeathChestManager() {
         this.timer = Manager.getInstance().getConfig().getInt(DESPAWN_TIME_JSON_KEY);
@@ -183,7 +182,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player p = event.getEntity();
-        if(p.hasPermission(DEATHCHEST_PERMISSION)) {
+        if(hasPermission(p)) {
             DeathChest dc = createDeathCest(p, event.getDrops());
             if(dc != null) {
                 event.getDrops().clear();
@@ -206,7 +205,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
             DeathChest dc = getDeathChest(event.getClickedBlock(), event.getPlayer().getUniqueId());
             if(dc != null) {
                 event.setCancelled(true); // To stop the "normal" chest inventory from opening
-                if((dc.checkIfOwner(player.getUniqueId()) && player.hasPermission(DEATHCHEST_PERMISSION)) || player.hasPermission(DEATHCHEST_BYPASS_PERMISSION)) {
+                if((dc.checkIfOwner(player.getUniqueId()) && hasPermission(player)) || hasAdminPermission(player)) {
                     if(dc.collect()) {
                         removeDeathChest(dc, false);
                     }
@@ -293,6 +292,16 @@ public class DeathChestManager implements Listener, ManagedPlugin
                 || getDeathChest(event.getDestination(), null) != null) {
             event.setCancelled(true);
         }
+    }
+
+    @Override
+    public boolean hasPermission(Permissible permissible) {
+        return permissible.hasPermission("dg.deathChestPermission");
+    }
+
+    @Override
+    public boolean hasAdminPermission(Permissible permissible) {
+        return permissible.hasPermission("dg.deathChestByPassPermission");
     }
 
     @Override

@@ -8,10 +8,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.util.Vector;
+import org.bukkit.permissions.Permissible;
 import utility.ErrorMessage;
 
-import java.io.*;
+import java.io.File;
 import java.util.*;
 
 import static home.HomeConstants.*;
@@ -160,6 +160,11 @@ public class HomeManager implements ManagedPlugin
         }
         Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(HOMES_LOADED, homes.keySet().size(), homes.entrySet().size()));
         return true;
+    }
+
+    @Override
+    public boolean hasPermission(Permissible permissible) {
+        return permissible.hasPermission("dg.homePermission");
     }
 
     @Override

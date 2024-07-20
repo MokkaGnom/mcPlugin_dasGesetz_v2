@@ -37,7 +37,7 @@ public class PingCommands implements TabExecutor
             return true;
         }
 
-        if(!sender.hasPermission(PingManager.PERMISSION)) {
+        if(!pm.hasPermission(sender)) {
             sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
             return true;
         }

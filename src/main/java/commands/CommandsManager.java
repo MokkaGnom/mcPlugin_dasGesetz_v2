@@ -3,6 +3,7 @@ package commands;
 import manager.ManagedPlugin;
 import manager.Manager;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.permissions.Permissible;
 
 import java.util.Map;
 
@@ -14,11 +15,36 @@ public class CommandsManager implements ManagedPlugin
             DasGesetz.COMMAND, new DasGesetz()
     );
 
+    private static CommandsManager instance;
+    public static CommandsManager getInstance(){
+        return instance;
+    }
+
     public CommandsManager() {
+        instance = this;
     }
 
     public Map<String, TabExecutor> getExecutors() {
         return executors;
+    }
+
+    @Override
+    public boolean hasPermission(Permissible permissible) {
+        return false;
+    }
+
+    @Override
+    public boolean hasPermission(Permissible permissible, Class<?> supervisedClass) {
+        if(supervisedClass == Coords.class) {
+            return permissible.hasPermission("dg.coordsPermission");
+        }
+        else if(supervisedClass == DasGesetz.class) {
+            return permissible.hasPermission("dg.dasGesetzPermission");
+        }
+        else if(supervisedClass == WeatherClear.class) {
+            return permissible.hasPermission("dg.weatherClearPermission");
+        }
+        return hasPermission(permissible);
     }
 
     @Override

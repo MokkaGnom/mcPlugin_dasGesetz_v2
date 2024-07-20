@@ -14,6 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.permissions.Permissible;
 
 import java.util.List;
 
@@ -21,7 +22,6 @@ public class PingManager implements Listener, ManagedPlugin
 {
     public static final String DURATION_JSON_KEY = "Ping.Duration";
     public static final String COOLDOWN_JSON_KEY = "Ping.Cooldown";
-    public static final String PERMISSION = "dg.pingPermission";
     public static final String COOLDOWN_META_KEY = "pingTime";
     public static final String COLOR_META_KEY = "pingColor";
     public static final Material PING_ITEM_MATERIAL = Material.STICK;
@@ -88,7 +88,7 @@ public class PingManager implements Listener, ManagedPlugin
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player p = event.getPlayer();
-        if(p.hasPermission(PERMISSION) && checkCooldown(p) && p.getInventory().getItemInOffHand().getType().equals(PING_ITEM_MATERIAL)
+        if(hasPermission(p) && checkCooldown(p) && p.getInventory().getItemInOffHand().getType().equals(PING_ITEM_MATERIAL)
                 && (event.getAction().equals(Action.RIGHT_CLICK_AIR) || event.getAction().equals(Action.RIGHT_CLICK_BLOCK))) {
             Block b = p.getTargetBlock(null, 255);
             String color = null;
@@ -124,6 +124,11 @@ public class PingManager implements Listener, ManagedPlugin
 
     public int getCooldown() {
         return cooldown;
+    }
+
+    @Override
+    public boolean hasPermission(Permissible permissible) {
+        return permissible.hasPermission("dg.pingPermission");
     }
 
     @Override

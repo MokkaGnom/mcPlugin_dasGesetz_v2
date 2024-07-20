@@ -13,7 +13,6 @@ import java.util.List;
 public class Coords implements TabExecutor
 {
     public static final String COMMAND = "coords";
-    public static final String PERMISSION = "dg.coordsPermission";
 
     public String getMessageString(String message) {
         return ChatColor.GRAY + "[" + ChatColor.YELLOW + "Coords" + ChatColor.GRAY + "] " + ChatColor.WHITE + message;
@@ -21,7 +20,7 @@ public class Coords implements TabExecutor
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(!sender.hasPermission(PERMISSION)) {
+        if(!CommandsManager.getInstance().hasPermission(sender, this.getClass())) {
             sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
             return true;
         }

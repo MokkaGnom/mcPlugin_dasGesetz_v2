@@ -11,7 +11,6 @@ import java.util.List;
 public class DasGesetz implements TabExecutor
 {
     public static final String COMMAND = "dasGesetz";
-    public static final String PERMISSION = "dg.dasGesetzPermission";
 
     private String[] dasGesetzStr = {"(1) Die Würde eines Spielers ist unantastbar.\n",
             "(2) Niemand darf einen anderen Spieler, ohne ausdrückliche Erlaubnis des betroffenen oder des Gerichtes, töten.\n",
@@ -61,7 +60,7 @@ public class DasGesetz implements TabExecutor
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if(!sender.hasPermission(PERMISSION)) {
+        if(!CommandsManager.getInstance().hasPermission(sender, this.getClass())) {
             sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
             return true;
         }

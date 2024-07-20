@@ -6,6 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.AreaEffectCloud;
 import org.bukkit.entity.EntityType;
+import utility.BlockHelper;
 
 import java.util.Objects;
 
@@ -13,35 +14,31 @@ public class Ping
 {
     public static final Color DEFAULT_COLOR = Color.fromRGB(255, 183, 197);
     public static final String PING_NAME_FORMAT = "%s's Ping";
-    public static final int[][] OFFSETS = {
-            {0, 1, 0},
-            {0, -1, 0},
-            {1, 0, 0},
-            {-1, 0, 0},
-            {0, 0, 1},
-            {0, 0, -1}
-    };
+    public static final String PING_NAME_FORMAT_2 = "%s' Ping";
+
+    private final AreaEffectCloud effectCloud;
+    private final Block block;
 
     public Ping(Block block, int time, String playerName, String colorHex) {
-        Block b = getAir(block);
-        AreaEffectCloud aec = (AreaEffectCloud) b.getWorld().spawnEntity(b.getLocation(), EntityType.AREA_EFFECT_CLOUD);
-        aec.setColor(Objects.requireNonNullElse(PingManager.getColorFromHexString(colorHex), DEFAULT_COLOR));
-        aec.setDuration((int) Manager.convertSecondsToTicks(time / 1000.d));
-        aec.setCustomName(String.format(PING_NAME_FORMAT, playerName));
-        aec.setCustomNameVisible(true);
-        aec.setGlowing(true);
-        aec.setGravity(false);
-        aec.setRadius(1);
-        aec.setSilent(true);
+        this.block = BlockHelper.getRelativeBlocks(block, Material.AIR).getFirst();
+        this.effectCloud = (AreaEffectCloud) this.block.getWorld().spawnEntity(this.block.getLocation(), EntityType.AREA_EFFECT_CLOUD);
+        this.effectCloud.setColor(Objects.requireNonNullElse(PingManager.getColorFromHexString(colorHex), DEFAULT_COLOR));
+        this.effectCloud.setDuration((int) Manager.convertSecondsToTicks(time / 1000.d));
+        this.effectCloud.setCustomName(String.format(
+                (playerName.substring(playerName.length() - 1).equalsIgnoreCase("s") ? PING_NAME_FORMAT_2 : PING_NAME_FORMAT),
+                playerName));
+        this.effectCloud.setCustomNameVisible(true);
+        this.effectCloud.setGlowing(true);
+        this.effectCloud.setGravity(false);
+        this.effectCloud.setRadius(1);
+        this.effectCloud.setSilent(true);
     }
 
-    public Block getAir(Block b) {
-        for(int[] offset : OFFSETS) {
-            Block relativeBlock = b.getRelative(offset[0], offset[1], offset[2]);
-            if(relativeBlock.getType().equals(Material.AIR)) {
-                return relativeBlock;
-            }
-        }
-        return b;
+    public AreaEffectCloud getEffectCloud() {
+        return effectCloud;
+    }
+
+    public Block getBlock() {
+        return block;
     }
 }

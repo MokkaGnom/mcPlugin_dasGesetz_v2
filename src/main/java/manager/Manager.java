@@ -8,10 +8,8 @@ import farming.EasyFarming;
 import farming.Timber;
 import home.HomeManager;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import blockLogger.BlockLogger;
 import other.Messages;
 import ping.PingManager;
 

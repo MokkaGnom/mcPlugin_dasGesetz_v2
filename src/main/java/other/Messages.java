@@ -7,6 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.permissions.Permissible;
 
 import java.util.List;
 
@@ -23,6 +24,11 @@ public class Messages implements Listener, ManagedPlugin
     @EventHandler
     public void OnPlayerJoin(PlayerJoinEvent event) {
         event.getPlayer().sendMessage((message != null ? message : "Hi"));
+    }
+
+    @Override
+    public boolean hasPermission(Permissible permissible) {
+        return true;
     }
 
     @Override

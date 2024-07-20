@@ -11,7 +11,6 @@ import java.util.List;
 
 public class BlockLoggerCommands implements TabExecutor
 {
-    public static final String PERMISSION = "dg.blockLoggerPerm";
     public static final String ADDED_MESSAGE = "Added \"%s\": %b";
     public static final String REMOVED_MESSAGE = "Removed \"%s\": %b";
     public static final String UNKNOWN_MATERIAL = "Unknown material \"%s\"";
@@ -39,7 +38,7 @@ public class BlockLoggerCommands implements TabExecutor
             return true;
         }
 
-        if(!sender.hasPermission(PERMISSION)) {
+        if(!blm.hasPermission(sender)) {
             sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
             return true;
         }
