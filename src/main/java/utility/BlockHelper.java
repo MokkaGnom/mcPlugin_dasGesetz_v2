@@ -8,7 +8,7 @@ import java.util.List;
 
 public final class BlockHelper
 {
-    private static final int[][] OFFSETS = {
+    public static final int[][] OFFSETS = {
             {0, 1, 0},
             {0, -1, 0},
             {1, 0, 0},

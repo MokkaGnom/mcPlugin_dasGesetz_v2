@@ -1,59 +1,49 @@
 package blockLock;
 
 // Bukkit:
+
 import manager.Manager;
-import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.Door;
 import org.bukkit.entity.Player;
-import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.metadata.FixedMetadataValue;
 
-// Java:
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
-public class BlockLock implements Serializable
+public class BlockLock
 {
-	private static final long serialVersionUID = 1104151989918337997L;
-	private transient BlockLockManagerMenu blmm;
-	private int blockPosition[];
-	private String worldName;
-	private BlockLockUser owner;
-	private List<UUID> friends;
+	private final UUID owner;
+	private final Set<UUID> friends;
+	private final Block block;
 	private boolean hopperLock;
 	private boolean redstoneLock;
 	private boolean blockBelowLock;
 	private BlockLock secondBlockLock;
+	private BlockLockManagerMenu blmm;
 
-	public BlockLock(BlockLockManager blm, Block block, BlockLockUser owner)
+	public BlockLock(Block block, UUID owner)
 	{
-		blockPosition = new int[3];
-		blockPosition[0] = block.getX();
-		blockPosition[1] = block.getY();
-		blockPosition[2] = block.getZ();
-		worldName = block.getWorld().getName();
-		if (!block.hasMetadata(BlockLockManager.blockLockKey))
-			block.setMetadata(BlockLockManager.blockLockKey, new FixedMetadataValue(Manager.getInstance(), block.getType()));
-
+		block.setMetadata(BlockLockManager.META_DATA.BLOCK.LOCK, new FixedMetadataValue(Manager.getInstance(), block.getLocation().toString()));
+		block.setMetadata(BlockLockManager.META_DATA.BLOCK.OWNER, new FixedMetadataValue(Manager.getInstance(), owner.toString()));
+		this.block = block;
 		this.blmm = null;
 		this.owner = owner;
-		this.friends = new ArrayList<UUID>();
+		this.friends = new HashSet<>();
 		this.hopperLock = true;
 		this.redstoneLock = true;
 		this.blockBelowLock = true;
-
 		secondBlockLock = null;
 	}
 
-	public boolean unlock(BlockLockManager blm)
+	public void unlock()
 	{
-		return owner.removeBlockLock(this, blm);
+		block.removeMetadata(BlockLockManager.META_DATA.BLOCK.LOCK, Manager.getInstance());
+		block.removeMetadata(BlockLockManager.META_DATA.BLOCK.OWNER, Manager.getInstance());
 	}
 
 	public boolean createManagerMenu(BlockLockManager blManager)
@@ -69,20 +59,7 @@ public class BlockLock implements Serializable
 
 	public boolean openManagerInventory(Player p)
 	{
-		if (checkIfPermissionToOpen(p.getUniqueId()))
-		{
-			try
-			{
-				blmm.open(p);
-				return true;
-			}
-			catch (Exception e)
-			{
-				Bukkit.getLogger().severe("BlockLock: openManagerInventory(Player p): blmm.open(Player p) Exception: " + e.getLocalizedMessage());
-				return false;
-			}
-		}
-		return false;
+		return blmm.open(p);
 	}
 
 	/**
@@ -115,33 +92,12 @@ public class BlockLock implements Serializable
 
 	public boolean checkIfDoor()
 	{
-		Block b = getBlock();
-		return (b.getBlockData() instanceof Door);
-	}
-
-	public boolean checkIfPermissionToOpen(UUID uuid)
-	{
-		Player p = Bukkit.getPlayer(uuid);
-		if ((p != null && p.hasPermission("dg.blockLockByPassPermission")) || owner.getUuid().equals(uuid)) // Owner / Admin
-		{
-			return true;
-		}
-		for (UUID i : friends) // Local friends
-		{
-			if (i.equals(uuid))
-				return true;
-		}
-		for (UUID i : owner.getFriends()) // Global friends
-		{
-			if (i.equals(uuid))
-				return true;
-		}
-		return false;
+		return (getBlock().getBlockData() instanceof Door);
 	}
 
 	public boolean addFriend(UUID friend)
 	{
-		if (!friends.contains(friend) && friends.size() < 54)
+		if (!friends.contains(friend))
 		{
 			friends.add(friend);
 			return true;
@@ -151,17 +107,11 @@ public class BlockLock implements Serializable
 
 	public boolean removeFriend(UUID friend)
 	{
-		if (friends.contains(friend))
-		{
-			friends.remove(friend);
-			return true;
-		}
-		return false;
+		return friends.remove(friend);
 	}
 
-	public String getLocationAsString()
-	{
-		return "X" + blockPosition[0] + "Y" + blockPosition[1] + "Z" + blockPosition[2];
+	public boolean checkIfFriend(UUID uuid) {
+		return friends.contains(uuid);
 	}
 
 	// Getter/Setter
@@ -198,52 +148,26 @@ public class BlockLock implements Serializable
 
 	public Block getBlock()
 	{
-		return Bukkit.getServer().getWorld(worldName).getBlockAt(blockPosition[0], blockPosition[1], blockPosition[2]);
+		return this.block;
 	}
 
-	public BlockLockUser getOwner()
+	public UUID getOwner()
 	{
 		return owner;
 	}
 
 	public Inventory getInventory()
 	{
-		try
+		if (getBlock().getState() instanceof InventoryHolder inventoryHolder)
 		{
-			Block block = getBlock();
-			if (block.getState() instanceof InventoryHolder)
-			{
-				return ((InventoryHolder) block.getState()).getInventory();
-			}
-			return null;
+			return inventoryHolder.getInventory();
 		}
-		catch (Exception e)
-		{
-			Bukkit.getLogger().severe("BL.getInventory: InventoryHolder Exception: " + e.getLocalizedMessage());
-			return null;
-		}
+		return null;
 	}
 
-	public List<UUID> getLocaFriends()
+	public Set<UUID> getLocalFriends()
 	{
 		return friends;
-	}
-
-	public List<UUID> getAllFriends()
-	{
-		List<UUID> list = new ArrayList<UUID>();
-
-		for (UUID i : owner.getFriends())
-		{
-			list.add(i);
-		}
-		for (UUID i : friends)
-		{
-			if (!list.contains(i))
-				list.add(i);
-		}
-
-		return list;
 	}
 
 	public BlockLockManagerMenu getBlockLockManagerMenu()

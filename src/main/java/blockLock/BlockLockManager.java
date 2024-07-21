@@ -1,9 +1,14 @@
 package blockLock;
 
 // Bukkit-Event:
+
 import manager.ManagedPlugin;
 import manager.Manager;
+import org.bukkit.ChatColor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -24,567 +29,411 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.permissions.Permissible;
-import org.bukkit.plugin.java.JavaPlugin;
+import utility.BlockHelper;
 
 // Java:
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+
+import static blockLock.BlockLockConstants.BLOCKS_LOADED;
+import static blockLock.BlockLockConstants.BLOCKS_SAVED;
 
 public class BlockLockManager implements Listener, ManagedPlugin
 {
-	public static final List<Material> lockableBlocks = Arrays.asList(Material.ACACIA_DOOR, Material.ACACIA_TRAPDOOR, Material.BIRCH_DOOR, Material.BIRCH_TRAPDOOR, Material.CRIMSON_DOOR,
-			Material.CRIMSON_TRAPDOOR, Material.DARK_OAK_DOOR, Material.DARK_OAK_TRAPDOOR, Material.IRON_DOOR, Material.IRON_TRAPDOOR, Material.JUNGLE_DOOR, Material.JUNGLE_TRAPDOOR,
-			Material.MANGROVE_DOOR, Material.MANGROVE_TRAPDOOR, Material.OAK_DOOR, Material.OAK_TRAPDOOR, Material.SPRUCE_DOOR, Material.SPRUCE_TRAPDOOR, Material.WARPED_DOOR,
-			Material.WARPED_TRAPDOOR, Material.CHEST, Material.TRAPPED_CHEST, Material.HOPPER, Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER, Material.BARREL,
-			Material.BREWING_STAND, Material.OAK_FENCE_GATE, Material.BIRCH_FENCE_GATE, Material.ACACIA_FENCE_GATE, Material.BAMBOO_FENCE_GATE, Material.CHERRY_FENCE_GATE,
-			Material.JUNGLE_FENCE_GATE, Material.SPRUCE_FENCE_GATE, Material.WARPED_FENCE_GATE, Material.CRIMSON_FENCE_GATE, Material.DARK_OAK_FENCE_GATE, Material.MANGROVE_FENCE_GATE);
+    public static final Set<Material> LOCKABLE_BLOCKS = Set.of(Material.ACACIA_DOOR, Material.ACACIA_TRAPDOOR, Material.BIRCH_DOOR, Material.BIRCH_TRAPDOOR, Material.CRIMSON_DOOR,
+            Material.CRIMSON_TRAPDOOR, Material.DARK_OAK_DOOR, Material.DARK_OAK_TRAPDOOR, Material.IRON_DOOR, Material.IRON_TRAPDOOR, Material.JUNGLE_DOOR, Material.JUNGLE_TRAPDOOR,
+            Material.MANGROVE_DOOR, Material.MANGROVE_TRAPDOOR, Material.OAK_DOOR, Material.OAK_TRAPDOOR, Material.SPRUCE_DOOR, Material.SPRUCE_TRAPDOOR, Material.WARPED_DOOR,
+            Material.WARPED_TRAPDOOR, Material.CHEST, Material.TRAPPED_CHEST, Material.HOPPER, Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER, Material.BARREL,
+            Material.BREWING_STAND, Material.OAK_FENCE_GATE, Material.BIRCH_FENCE_GATE, Material.ACACIA_FENCE_GATE, Material.BAMBOO_FENCE_GATE, Material.CHERRY_FENCE_GATE,
+            Material.JUNGLE_FENCE_GATE, Material.SPRUCE_FENCE_GATE, Material.WARPED_FENCE_GATE, Material.CRIMSON_FENCE_GATE, Material.DARK_OAK_FENCE_GATE, Material.MANGROVE_FENCE_GATE);
 
-	public static final String blockLockKey = "BlockLock";
-	private File saveFile;
-	private List<BlockLockUser> players;
+    public interface META_DATA
+    {
+        interface BLOCK
+        {
+            String LOCK = "blockLock";
+            String OWNER = "blockLockOwner";
+        }
 
-	public BlockLockManager()
-	{
-		this.saveFile = new File(Manager.getInstance().getDataFolder(), "BlockLock.bin");
-		players = new ArrayList<BlockLockUser>();
-	}
+        interface PLAYER
+        {
+            String SHOW_SNEAK_MENU = "blockLockShowSneakMenu";
+        }
+    }
 
-	public static boolean sendMessage(UUID receiver, String message, boolean error, boolean consoleLog)
-	{
-		if (receiver != null)
-		{
-			Player p = Bukkit.getServer().getPlayer(receiver);
-			if (p != null && message != null)
-			{
-				if (consoleLog)
-				{
-					Bukkit.getConsoleSender().sendMessage("BlockLock Error: " + message);
-				}
-				if (error)
-				{
-					p.sendMessage("§7[§BBlockLock§7] §C" + message);
-				}
-				else
-				{
-					p.sendMessage("§7[§BBlockLock§7] §D" + message);
-				}
-				return true;
-			}
-		}
-		return false;
-	}
+    public static final int MAX_FRIENDS = 54; // Ansonsten müsste man ne zweite Seite im Menü machen
+    private final File SAVE_FILE = new File(Manager.getInstance().getDataFolder(), getName() + ".yml");
 
-	public static boolean sendMessage(UUID receiver, String message, boolean error)
-	{
-		return sendMessage(receiver, message, error, false);
-	}
+    private final FileConfiguration saveConfigFile;
+    private final Map<UUID, Set<BlockLock>> blockLocks; //TODO: Die sets werden noch nicht erstellt (sind also in get-Methoden immer null)
+    private final Map<UUID, Set<UUID>> friends; //TODO: Die sets werden noch nicht erstellt (sind also in get-Methoden immer null)
 
-	public static boolean sendMessage(UUID receiver, String message)
-	{
-		return sendMessage(receiver, message, false, false);
-	}
+    public BlockLockManager() {
+        this.saveConfigFile = YamlConfiguration.loadConfiguration(SAVE_FILE);
+        this.blockLocks = new HashMap<>();
+        this.friends = new HashMap<>();
+    }
 
-	@EventHandler
-	public void onWorldSave(WorldSaveEvent event)
-	{
-		if (event.getWorld().getName().equals(Bukkit.getWorlds().get(0).getName()))
-			saveToFile();
-	}
+    public String getMessageString(String message) {
+        return ChatColor.GRAY + "[" + ChatColor.LIGHT_PURPLE + getName() + ChatColor.GRAY + "] " + ChatColor.WHITE + message;
+    }
 
-	@EventHandler
-	public void onBlockPlace(BlockPlaceEvent event)
-	{
-		Block b = event.getBlockPlaced();
-		if (isBlockLockable(b))
-		{
-			if (!checkIfNextBlockIsLocked(b, event.getPlayer().getUniqueId()))
-			{
-				lock(event.getPlayer(), b);
-			}
-			else
-			{
-				event.setCancelled(true);
-			}
-		}
-	}
+    public boolean sendMessage(CommandSender receiver, String message) {
+        if(receiver != null) {
+            receiver.sendMessage(getMessageString(message));
+            return true;
+        }
+        return false;
+    }
 
-	@EventHandler
-	public void onPlayerInteract(PlayerInteractEvent event)
-	{
-		if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK))
-		{
-			Player p = event.getPlayer();
-			Block block = event.getClickedBlock();
+    @EventHandler
+    public void onWorldSave(WorldSaveEvent event) {
+        if(event.getWorld().getName().equals(Bukkit.getWorlds().getFirst().getName()))
+            saveToFile();
+    }
 
-			if (block.hasMetadata(blockLockKey))
-			{
-				BlockLock bl = getBlockLock(block);
-				if (bl.checkIfPermissionToOpen(p.getUniqueId()))
-				{
-					if (p.isSneaking() && getBlockLockUser(p.getUniqueId()).getUseSneakMenu())
-					{
-						bl.openManagerInventory(p);
-						event.setCancelled(true);
-					}
-				}
-				else
-				{
-					sendMessage(p.getUniqueId(), "No permission!", true);
-					event.setCancelled(true);
-				}
-			}
-		}
-	}
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+        Block b = event.getBlockPlaced();
+        if(isBlockLockable(b)) {
+            if(!checkIfNextBlockIsLocked(b, event.getPlayer())) {
+                lock(event.getPlayer(), b);
+            }
+            else {
+                event.setCancelled(true);
+            }
+        }
+    }
 
-	public void validateAll()
-	{
-		try
-		{
-			for (BlockLockUser blu : players)
-			{
-				List<BlockLock> blocklocks = new ArrayList<BlockLock>();
-				blocklocks.addAll(blu.getBlockLocks());
-				for (BlockLock bl : blocklocks)
-				{
-					if (!isBlockLockable(bl.getBlock()))
-					{
-						bl.unlock(this);
-					}
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			Bukkit.getConsoleSender().sendMessage("BlockLock Error (Validate): " + e.getLocalizedMessage());
-		}
-	}
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
+            Player player = event.getPlayer();
+            Block block = event.getClickedBlock();
 
-	public boolean saveToFile()
-	{
-		validateAll();
-		try
-		{
-			saveFile.createNewFile(); // Creates saveFile, if not exists
-			FileOutputStream f = new FileOutputStream(saveFile, false);
-			ObjectOutputStream o = new ObjectOutputStream(f);
+            if(isBlockLock(block)) {
+                BlockLock bl = getBlockLock(block);
+                if(checkIfPermissionToOpen(player, bl)) {
+                    if(player.isSneaking() && getShowSneakMenu(player)) {
+                        bl.openManagerInventory(player);
+                        event.setCancelled(true);
+                    }
+                }
+                else {
+                    sendMessage(player, "No permission!");
+                    event.setCancelled(true);
+                }
+            }
+        }
+    }
 
-			// Write count of objects to file
-			o.write(players.size());
+    public boolean saveToFile() {
 
-			// Write objects to file
-			for (BlockLockUser i : players)
-			{
-				o.writeObject(i);
-			}
+        //TODO
 
-			o.close();
-			f.close();
-			Bukkit.getConsoleSender().sendMessage("BlockLockPlayers saved " + players.size() + " BlockLockPlayers");
-			return true;
-		}
-		catch (Exception e)
-		{
-			Bukkit.getConsoleSender().sendMessage("BlockLock Error (Save): " + e.getLocalizedMessage());
-		}
-		return false;
-	}
+        try {
+            saveConfigFile.save(SAVE_FILE);
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(BLOCKS_SAVED, blockLocks.keySet().size(), blockLocks.entrySet().size()));
+            return true;
+        } catch(Exception e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            return false;
+        }
+    }
 
-	public boolean loadFromFile()
-	{
-		try
-		{
-			if (saveFile.createNewFile()) // Creates saveFile, if not exists
-			{
-				Bukkit.getConsoleSender().sendMessage("BlockLock Warning (Load): Skipped (Empty file)");
-				return false;
-			}
-			FileInputStream f = new FileInputStream(saveFile);
-			ObjectInputStream o = new ObjectInputStream(f);
+    public boolean loadFromFile() {
+        try {
+            saveConfigFile.load(SAVE_FILE);
+        } catch(Exception e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            return false;
+        }
 
-			int size = o.read();
+        //TODO
 
-			for (int i = 0; i < size; i++)
-			{
-				BlockLockUser blu = (BlockLockUser) o.readObject();
-				blu.createAllBlockLockManagerMenus(this);
-				players.add(blu);
-			}
+        Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(BLOCKS_LOADED, blockLocks.keySet().size(), blockLocks.entrySet().size()));
+        return true;
+    }
 
-			o.close();
-			f.close();
-			Bukkit.getConsoleSender().sendMessage("BlockLock loaded " + players.size() + "/" + size + " BlockLockPlayers");
-			Bukkit.getConsoleSender().sendMessage("BlockLock loaded " + getAllBlockLockBlocks().size() + " BlockLocks");
-			return true;
-		}
-		catch (Exception e)
-		{
-			Bukkit.getConsoleSender().sendMessage("BlockLock Error (Load): " + e.getLocalizedMessage());
-		}
-		return false;
-	}
+    public boolean lock(Player player, Block block) {
+        if(!isBlockLockable(block)) {
+            sendMessage(player, "Block not supported");
+            return false;
+        }
 
-	public boolean lock(Player p, Block b)
-	{
-		if (!isBlockLockable(b))
-		{
-			BlockLockManager.sendMessage(p.getUniqueId(), "Block not supported");
-			return false;
-		}
+        if(!isBlockLock(block) && hasPermission(player)) {
+            BlockLock bl = new BlockLock(block, player.getUniqueId());
+            blockLocks.get(player.getUniqueId()).add(bl);
+            bl.createManagerMenu(this);
+            sendMessage(player, block.getType().toString() + " locked!");
+            return true;
+        }
+        sendMessage(player, block.getType().toString() + " is already locked!");
+        return false;
+    }
 
-		if (!b.hasMetadata(blockLockKey) && p.hasPermission("dg.blockLockPermission"))
-		{
-			getBlockLockUser(p.getUniqueId()).createBlockLock(b, this);
-			sendMessage(p.getUniqueId(), b.getType().toString() + " locked!");
-			return true;
-		}
-		sendMessage(p.getUniqueId(), b.getType().toString() + " is already locked!");
-		return false;
-	}
+    public boolean unlock(Player p, Block b) {
+        if(isBlockLock(b)) {
+            BlockLock bl = getBlockLock(b);
+            if(hasPermission(p) && checkIfPermissionToOpen(p, bl)) {
+                bl.unlock();
+                sendMessage(p, b.getType().toString() + " unlocked!");
+                return true;
+            }
+            else {
+                sendMessage(p, "No permission!");
+                return false;
+            }
+        }
+        sendMessage(p, b.getType().toString() + " is not locked!");
+        return false;
+    }
 
-	public boolean unlock(Player p, Block b)
-	{
-		if (b.hasMetadata(blockLockKey))
-		{
-			BlockLock bl = getBlockLock(b);
-			if (p.hasPermission("dg.blockLockPermission") && bl.checkIfPermissionToOpen(p.getUniqueId()))
-			{
-				bl.unlock(this);
-				sendMessage(p.getUniqueId(), b.getType().toString() + " unlocked!");
-				System.gc();
-				return true;
-			}
-			else
-			{
-				sendMessage(p.getUniqueId(), "No permission!", true);
-				return false;
-			}
-		}
-		sendMessage(p.getUniqueId(), b.getType().toString() + " is not locked!");
-		return false;
-	}
+    public List<String> getFriends(UUID owner, Block b) {
+        Set<UUID> set = new HashSet<>(friends.get(owner));
+        BlockLock bl = getBlockLock(b);
+        if(bl != null) {
+            set.addAll(bl.getLocalFriends());
+        }
+        return (set.isEmpty() ? List.of("No friends") : set.stream().map(UUID::toString).toList());
+    }
 
-	public void showMenu(Player p, boolean b)
-	{
-		getBlockLockUser(p.getUniqueId()).setUseSneakMenu(b);
-	}
+    public boolean addFriend(UUID owner, Block b, UUID friend) {
+        if(owner == null || b == null || friend == null)
+            return false;
 
-	public List<String> listFriends(Player owner, Block b)
-	{
-		List<String> list = new ArrayList<String>();
-		BlockLock bl = getBlockLock(b);
-		if (bl != null && bl.checkIfPermissionToOpen(owner.getUniqueId()))
-		{
-			for (UUID i : bl.getAllFriends())
-			{
-				list.add(Bukkit.getOfflinePlayer(i).getName() + "/" + i);
-			}
-		}
-		else
-		{
-			for (UUID i : getBlockLockUser(owner.getUniqueId()).getFriends())
-			{
-				list.add(Bukkit.getOfflinePlayer(i).getName() + "/" + i);
-			}
-		}
+        BlockLock bl = getBlockLock(b);
+        if(bl != null && bl.getOwner().equals(owner)) {
+            return bl.addFriend(friend);
+        }
+        return false;
+    }
 
-		if (list.size() == 0)
-			list.add("No friends");
-		return list;
-	}
+    public boolean removeFriend(UUID owner, Block b, UUID friend) {
+        if(owner == null || b == null || friend == null)
+            return false;
 
-	public boolean addFriend(UUID owner, Block b, UUID friend)
-	{
-		if (owner == null || friend == null)
-			return false;
+        BlockLock bl = getBlockLock(b);
+        if(bl != null && bl.getOwner().equals(owner)) {
+            return bl.removeFriend(friend);
+        }
+        return false;
+    }
 
-		BlockLock bl = getBlockLock(b);
-		if (bl != null && bl.getOwner().getUuid().equals(owner))
-		{
-			return bl.addFriend(friend);
-		}
-		return false;
-	}
+    public boolean addGlobalFriend(UUID owner, UUID friend) {
+        if(owner == null || friend == null)
+            return false;
+        return friends.get(owner).add(friend);
+    }
 
-	public boolean removeFriend(UUID owner, Block b, UUID friend)
-	{
-		if (owner == null || friend == null)
-			return false;
+    public boolean removeGlobalFriend(UUID owner, UUID friend) {
+        if(owner == null || friend == null)
+            return false;
+        return friends.get(owner).remove(friend);
+    }
 
-		BlockLock bl = getBlockLock(b);
-		if (bl != null && bl.getOwner().getUuid().equals(owner))
-		{
-			return bl.removeFriend(friend);
-		}
-		return false;
-	}
+    public boolean checkIfNextBlockIsLocked(Block b, Player player) {
+        BlockLock bl = null;
+        for(int[] offset : BlockHelper.OFFSETS) {
+            Block relativeBlock = b.getRelative(offset[0], offset[1], offset[2]);
+            if(isBlockLock(relativeBlock)){
+                bl = getBlockLock(relativeBlock);
+                break;
+            }
+        }
+        return bl != null && !checkIfPermissionToOpen(player, bl);
+    }
 
-	public boolean addGlobalFriend(UUID owner, UUID friend)
-	{
-		if (owner == null || friend == null)
-			return false;
-		return getBlockLockUser(owner).addFriend(friend);
-	}
+    public boolean getShowSneakMenu(Player player) {
+        return player.hasMetadata(META_DATA.PLAYER.SHOW_SNEAK_MENU) && player.getMetadata(META_DATA.PLAYER.SHOW_SNEAK_MENU).getFirst().asBoolean();
+    }
 
-	public boolean removeGlobalFriend(UUID owner, UUID friend)
-	{
-		if (owner == null || friend == null)
-			return false;
-		return getBlockLockUser(owner).removeFriend(friend);
-	}
+    public void setShowSneakMenu(Player player, boolean show) {
+        player.setMetadata(META_DATA.PLAYER.SHOW_SNEAK_MENU, new FixedMetadataValue(Manager.getInstance(), show));
+    }
 
-	public BlockLockUser createBlockLockUser(UUID uuid)
-	{
-		BlockLockUser blu = new BlockLockUser(uuid);
-		players.add(blu);
-		return blu;
-	}
+    public boolean isBlockLock(Block block) {
+        return isBlockLockable(block) && block.hasMetadata(META_DATA.BLOCK.LOCK);
+    }
 
-	public boolean checkIfNextBlockIsLocked(Block b, UUID uuid)
-	{
-		BlockLock bl = null;
-		if (getBlockLock(b.getRelative(1, 0, 0)) != null)
-			bl = getBlockLock(b.getRelative(1, 0, 0));
-		else if (getBlockLock(b.getRelative(-1, 0, 0)) != null)
-			bl = getBlockLock(b.getRelative(-1, 0, 0));
-		else if (getBlockLock(b.getRelative(0, 1, 0)) != null)
-			bl = getBlockLock(b.getRelative(0, 1, 0));
-		else if (getBlockLock(b.getRelative(0, -1, 0)) != null)
-			bl = getBlockLock(b.getRelative(0, -1, 0));
-		else if (getBlockLock(b.getRelative(0, 0, 1)) != null)
-			bl = getBlockLock(b.getRelative(0, 0, 1));
-		else if (getBlockLock(b.getRelative(0, 0, -1)) != null)
-			bl = getBlockLock(b.getRelative(0, 0, -1));
+    public UUID getOwner(Block block) {
+        if(isBlockLock(block)) {
+            return UUID.fromString(block.getMetadata(META_DATA.BLOCK.OWNER).getFirst().asString());
+        }
+        return null;
+    }
 
-		if (bl == null)
-			return false;
-		else if (bl.checkIfPermissionToOpen(uuid))
-			return false;
-		else
-			return true;
-	}
+    public boolean checkIfPermissionToOpen(Player player, BlockLock blockLock) {
+        return hasPermission(player) && (
+                blockLock.getOwner().equals(player.getUniqueId())
+                        || blockLock.checkIfFriend(player.getUniqueId())
+                        || friends.get(blockLock.getOwner()).contains(player.getUniqueId())
+        );
+    }
 
-	public BlockLockUser getBlockLockUser(UUID uuid)
-	{
-		for (BlockLockUser i : players)
-		{
-			if (i.getUuid().equals(uuid))
-				return i;
-		}
-		return createBlockLockUser(uuid);
-	}
+    public boolean isBlockLockable(Block block) {
+        return LOCKABLE_BLOCKS.contains(block.getType());
+    }
 
-	public boolean isBlockLockable(Block block)
-	{
-		return lockableBlocks.contains(block.getType());
-	}
+    public BlockLock getBlockLock(Block block) {
+        UUID owner = getOwner(block);
+        if(owner != null) {
+            for(BlockLock bl : blockLocks.get(owner)) {
+                if(bl.getBlock().equals(block)) {
+                    return bl;
+                }
+            }
+        }
+        return null;
+    }
 
-	public BlockLock getBlockLock(Block block)
-	{
-		if (block.hasMetadata(blockLockKey) && isBlockLockable(block))
-		{
-			for (BlockLockUser i : players)
-			{
-				for (BlockLock bl : i.getBlockLocks())
-				{
-					if (bl.getBlock().equals(block))
-						return bl;
-				}
-			}
-		}
-		return null;
-	}
+    public BlockLock getBlockLockFromInventory(Inventory inventory) {
+        if(inventory == null) {
+            return null;
+        }
 
-	public BlockLock getBlockLockFromInventory(Inventory inv)
-	{
-		for (BlockLockUser i : players)
-		{
-			for (BlockLock bl : i.getBlockLocks())
-			{
-				Inventory inven = bl.getInventory();
-				if (inven != null && inv != null)
-				{
-					if (inven.equals(inv))
-						return bl;
-				}
-			}
-		}
-		return null;
-	}
+        for(Map.Entry<UUID, Set<BlockLock>> entry : blockLocks.entrySet()) {
+            for(BlockLock bl : entry.getValue()) {
+                Inventory inv = bl.getInventory();
+                if(inventory.equals(inv)) {
+                    return bl;
+                }
+            }
+        }
+        return null;
+    }
 
-	public List<BlockLockUser> getAllPlayer()
-	{
-		return players;
-	}
+    /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
+    // Protecting Block:
 
-	public List<BlockLock> getAllLockBlocksToPlayer(UUID owner)
-	{
-		for (BlockLockUser i : players)
-		{
-			if (i.getUuid().equals(owner))
-				return i.getBlockLocks();
-		}
+    /**
+     * Preventing BlockLocks (example: doors, hoppers) to be activated by Redstone
+     */
+    @EventHandler
+    public void onRedstone(BlockRedstoneEvent event) {
+        Block block = event.getBlock();
+        if(isBlockLock(block) && getBlockLock(block).isRedstoneLock()) {
+            event.setNewCurrent(event.getOldCurrent());
+        }
+    }
 
-		return new ArrayList<BlockLock>();
-	}
+    /**
+     * Preventing anyone from breaking the Block, or the block below
+     */
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        Block b = event.getBlock();
+        if(isBlockLockable(b)) // Block
+        {
+            if(isBlockLock(b)) {
+                BlockLock bl = getBlockLock(b);
+                if(bl.getOwner().equals(event.getPlayer().getUniqueId()))
+                    unlock(event.getPlayer(), b);
+                else
+                    event.setCancelled(true);
+            }
+            /*
+             * else { int cibb = checkIfBlockBelow(b, event.getPlayer()); if (cibb == 1) event.setCancelled(true); else if (cibb == 2 && getBlockLock(b.getRelative(0, 1, 0)).checkIfDoor())
+             * unlock(event.getPlayer(), b.getRelative(0, 1, 0)); }
+             */
 
-	public List<Block> getAllBlockLockBlocks()
-	{
-		List<Block> blocks = new ArrayList<Block>();
+        }
+        /*
+         * else { int cibb = checkIfBlockBelow(b, event.getPlayer()); if (cibb == 1) event.setCancelled(true); else if (cibb == 2 && getBlockLock(b.getRelative(0, 1, 0)).checkIfDoor())
+         * unlock(event.getPlayer(), b.getRelative(0, 1, 0)); }
+         */
 
-		for (BlockLockUser i : players)
-		{
-			for (BlockLock bl : i.getBlockLocks())
-			{
-				blocks.add(bl.getBlock());
-			}
-		}
+    }
 
-		return blocks;
-	}
+    /**
+     * Checks if Block b is below a BlockLock (0/1) and if Player p has permission to open it (1/2)
+     */
+    public int checkIfBlockBelow(Block b, Player p) {
+        Block b2 = b.getRelative(0, 1, 0);
+        BlockLock bl2 = getBlockLock(b2);
+        if(bl2 != null && bl2.isBlockBelowLock()) {
+            if(checkIfPermissionToOpen(p, bl2))
+                return 2;
+            else
+                return 1;
+        }
+        return 0;
+    }
 
-	/* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
-	// Protecting Block:
+    /**
+     * Preventing the Block from being blown up by Creeper, Wither or TNT
+     */
+    @EventHandler
+    public void onEntityExplode(EntityExplodeEvent event) {
+        try {
+            if(event.getEntity() instanceof Creeper || event.getEntity() instanceof TNTPrimed || event.getEntity() instanceof Wither) {
+                List<Block> removeBlocks = new ArrayList<Block>();
+                for(Block i : event.blockList()) {
+                    if(isBlockLock(i))
+                        removeBlocks.add(i);
+                }
+                event.blockList().removeAll(removeBlocks);
+            }
+        } catch(Exception e) {
+            Bukkit.getConsoleSender().sendMessage("BL onEntityExplode: " + e.getLocalizedMessage());
+        }
+    }
 
-	/** Preventing BlockLocks (example: doors, hoppers) to be activated by Redstone */
-	@EventHandler
-	public void onRedstone(BlockRedstoneEvent event)
-	{
-		Block block = event.getBlock();
-		if (block.hasMetadata(blockLockKey) && getBlockLock(block).isRedstoneLock())
-		{
-			event.setNewCurrent(event.getOldCurrent());
-		}
-	}
+    /**
+     * Preventing anyone(hoppers, etc) than the player from grabbing items from the Container
+     */
+    @EventHandler
+    public void onInventoryMoveItem(InventoryMoveItemEvent event) {
+        if(true)
+            return; // TODO
 
-	/** Preventing anyone from breaking the Block, or the block below */
-	@EventHandler
-	public void onBlockBreak(BlockBreakEvent event)
-	{
-		Block b = event.getBlock();
-		if (isBlockLockable(b)) // Block
-		{
-			if (b.hasMetadata(blockLockKey))
-			{
-				BlockLock bl = getBlockLock(b);
-				if (bl.getOwner().getUuid().equals(event.getPlayer().getUniqueId()))
-					unlock(event.getPlayer(), b);
-				else
-					event.setCancelled(true);
-			}
-			/*
-			 * else { int cibb = checkIfBlockBelow(b, event.getPlayer()); if (cibb == 1) event.setCancelled(true); else if (cibb == 2 && getBlockLock(b.getRelative(0, 1, 0)).checkIfDoor())
-			 * unlock(event.getPlayer(), b.getRelative(0, 1, 0)); }
-			 */
+        BlockLock source = getBlockLockFromInventory(event.getSource());
+        BlockLock dest = getBlockLockFromInventory(event.getDestination());
+        if((source != null && !event.getDestination().getType().equals(InventoryType.PLAYER) && source.isHopperLock()) // Prevents Hopper, etc. from PUTTING items IN the chest
+                || (dest != null && dest.isHopperLock())) // Prevents Hopper, etc. from REMOVING items FROM the chest
+        {
+            event.setCancelled(true);
+        }
+    }
 
-		}
-		/*
-		 * else { int cibb = checkIfBlockBelow(b, event.getPlayer()); if (cibb == 1) event.setCancelled(true); else if (cibb == 2 && getBlockLock(b.getRelative(0, 1, 0)).checkIfDoor())
-		 * unlock(event.getPlayer(), b.getRelative(0, 1, 0)); }
-		 */
+    @Override
+    public boolean hasPermission(Permissible permissible) {
+        return permissible.hasPermission("dg.blockLockPermission");
+    }
 
-	}
+    @Override
+    public boolean onEnable() {
+        BlockLockCommands blc = new BlockLockCommands(this);
+        Manager.getInstance().getServer().getPluginManager().registerEvents(this, Manager.getInstance());
+        try {
+            Manager.getInstance().getCommand(BlockLockCommands.CommandStrings.ROOT).setExecutor(blc);
+            Manager.getInstance().getCommand(BlockLockCommands.CommandStrings.ROOT).setTabCompleter(blc);
+        } catch(NullPointerException e) {
+            Manager.getInstance().sendErrorMessage(e.getMessage());
+            onDisable();
+            return false;
+        }
+        loadFromFile();
+        return true;
+    }
 
-	/** Checks if Block b is below a BlockLock (0/1) and if Player p has permission to open it (1/2) */
-	public int checkIfBlockBelow(Block b, Player p)
-	{
-		Block b2 = b.getRelative(0, 1, 0);
-		BlockLock bl2 = getBlockLock(b2);
-		if (bl2 != null && bl2.isBlockBelowLock())
-		{
-			if (bl2.checkIfPermissionToOpen(p.getUniqueId()))
-				return 2;
-			else
-				return 1;
-		}
-		return 0;
-	}
+    @Override
+    public void onDisable() {
+        saveToFile();
+        HandlerList.unregisterAll(this);
+        try {
+            Manager.getInstance().getCommand(BlockLockCommands.CommandStrings.ROOT).setExecutor(null);
+            Manager.getInstance().getCommand(BlockLockCommands.CommandStrings.ROOT).setTabCompleter(null);
+        } catch(NullPointerException e) {
+            Manager.getInstance().sendErrorMessage(e.getMessage());
+        }
+    }
 
-	/** Preventing the Block from being blown up by Creeper, Wither or TNT */
-	@EventHandler
-	public void onEntityExplode(EntityExplodeEvent event)
-	{
-		try
-		{
-			if (event.getEntity() instanceof Creeper || event.getEntity() instanceof TNTPrimed || event.getEntity() instanceof Wither)
-			{
-				List<Block> removeBlocks = new ArrayList<Block>();
-				for (Block i : event.blockList())
-				{
-					if (i.hasMetadata(blockLockKey))
-						removeBlocks.add(i);
-				}
-				event.blockList().removeAll(removeBlocks);
-			}
-		}
-		catch (Exception e)
-		{
-			Bukkit.getConsoleSender().sendMessage("BL onEntityExplode: " + e.getLocalizedMessage());
-		}
-	}
+    @Override
+    public String getName() {
+        return "BlockLock";
+    }
 
-	/** Preventing anyone(hoppers, etc) than the player from grabbing items from the Container */
-	@EventHandler
-	public void onInventoryMoveItem(InventoryMoveItemEvent event)
-	{
-		if (true)
-			return; // TODO
-
-		BlockLock source = getBlockLockFromInventory(event.getSource());
-		BlockLock dest = getBlockLockFromInventory(event.getDestination());
-		if ((source != null && !event.getDestination().getType().equals(InventoryType.PLAYER) && source.isHopperLock()) // Prevents Hopper, etc. from PUTTING items IN the chest
-				|| (dest != null && dest.isHopperLock())) // Prevents Hopper, etc. from REMOVING items FROM the chest
-		{
-			event.setCancelled(true);
-		}
-	}
-
-	@Override
-	public boolean hasPermission(Permissible permissible) {
-		return false;
-	}
-
-	@Override
-	public boolean onEnable ()
-	{
-		BlockLockCommands blockLockCommands = new BlockLockCommands(this);
-		Manager.getInstance().getServer().getPluginManager().registerEvents(this, Manager.getInstance());
-		loadFromFile();
-		try
-		{
-			Manager.getInstance().getCommand(BlockLockCommands.command).setExecutor(blockLockCommands);
-			Manager.getInstance().getCommand(BlockLockCommands.command).setTabCompleter(blockLockCommands);
-		}
-		catch (NullPointerException e)
-		{
-			Manager.getInstance().sendErrorMessage(e.getMessage());
-			onDisable();
-			return false;
-		}
-		return true;
-	}
-
-	@Override
-	public void onDisable ()
-	{
-		saveToFile();
-	}
-
-	@Override
-	public String getName ()
-	{
-		return "BlockLock";
-	}
-
-	@Override
-	public void createDefaultConfig (FileConfiguration config)
-	{
-	}
 }
