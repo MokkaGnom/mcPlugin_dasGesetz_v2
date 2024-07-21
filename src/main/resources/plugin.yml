@@ -99,3 +99,6 @@ permissions:
   dg.blockLoggerPerm:
     description: Allows a Player to add/remove/list logged blocks
     default: op
+  dg.createVillagerPermission:
+    description: Allows a Player to spawn a Villager by sneaking with another player
+    default: true
