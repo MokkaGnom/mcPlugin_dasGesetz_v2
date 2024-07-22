@@ -27,7 +27,7 @@ public class BlockLockCommands implements TabExecutor
         String REMOVE_GLOBAL_FRIEND = "removeGlobalFriend";
         String SHOW_MENU = "showMenu";
 
-        List<String> FIRST_ARGUMENT = List.of(LIST_FRIENDS, LOCK, UNLOCK, ADD_FRIEND, REMOVE_FRIEND, ADD_GLOBAL_FRIEND, REMOVE_GLOBAL_FRIEND);
+        List<String> FIRST_ARGUMENT = List.of(LIST_FRIENDS, LOCK, UNLOCK, ADD_FRIEND, REMOVE_FRIEND, ADD_GLOBAL_FRIEND, REMOVE_GLOBAL_FRIEND, SHOW_MENU);
     }
 
     private final BlockLockManager blManager;
@@ -50,8 +50,14 @@ public class BlockLockCommands implements TabExecutor
                 blManager.lock(player, block);
             }
             else if(args[0].equalsIgnoreCase(CommandStrings.LIST_FRIENDS)) {
-                for(String s : blManager.getFriends(player.getUniqueId(), block)) {
-                    sender.sendMessage(s);
+                List<String> friendsList = blManager.getFriends(player.getUniqueId(), block).stream().map(UUID::toString).toList();
+                if(friendsList.isEmpty()) {
+                    blManager.sendMessage(sender, "No friends");
+                }
+                else {
+                    for(String s : friendsList) {
+                        blManager.sendMessage(sender, s);
+                    }
                 }
             }
             else {
@@ -139,7 +145,7 @@ public class BlockLockCommands implements TabExecutor
             return null;
         }
         else if(args.length == 2 && args[0].equalsIgnoreCase(CommandStrings.SHOW_MENU)) {
-            return Arrays.asList("0", "1");
+            return Arrays.asList("0", "1", "true", "false");
         }
         return ErrorMessage.COMMAND_NO_OPTION_AVAILABLE;
     }

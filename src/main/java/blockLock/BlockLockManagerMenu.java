@@ -18,10 +18,11 @@ import org.bukkit.inventory.meta.SkullMeta;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 public class BlockLockManagerMenu implements Listener
 {
-    private static final int invSize = 9;
+    private static final int INV_SIZE = 9;
     private static final Material[] material = {Material.RED_WOOL, Material.AIR, Material.AIR, Material.HOPPER, Material.REDSTONE, Material.GRASS_BLOCK, Material.AIR, Material.AIR,
             Material.PLAYER_HEAD};
     private static final String[] name = {"Unlock", "", "", "Lock Hopper", "Lock Redstone", "Lock Block Below", "", "", "Friends"};
@@ -36,12 +37,12 @@ public class BlockLockManagerMenu implements Listener
     public BlockLockManagerMenu(BlockLockManager blManager, BlockLock bl) {
         this.blManager = blManager;
         this.blockLock = bl;
-        inv = Bukkit.createInventory(null, invSize, "BlockLock Manager");
+        inv = Bukkit.createInventory(null, INV_SIZE, "BlockLock Manager");
 
-        items = new ItemStack[invSize];
+        items = new ItemStack[INV_SIZE];
         ItemMeta meta = null;
 
-        for(int i = 0; i < invSize; i++) {
+        for(int i = 0; i < INV_SIZE; i++) {
             items[i] = new ItemStack(material[i]);
             if(items[i].getType().equals(Material.AIR))
                 continue;
@@ -50,7 +51,7 @@ public class BlockLockManagerMenu implements Listener
             items[i].setItemMeta(meta);
         }
 
-        for(int i = 0; i < invSize; i++) {
+        for(int i = 0; i < INV_SIZE; i++) {
             inv.setItem(i, new ItemStack(items[i]));
         }
 
@@ -63,18 +64,11 @@ public class BlockLockManagerMenu implements Listener
         this.friendsItems = null;
     }
 
-    private boolean checkClick(ItemStack is, Player p) {
-        int index = -1;
-        for(int i = 0; i < invSize; i++) {
-            if(items[i].equals(is)) {
-                index = i;
-                break;
-            }
-        }
-        if(index != -1) {
-            switch(index) {
+    private boolean checkClick(int slotIndex, Player p) {
+        if(slotIndex != -1) {
+            switch(slotIndex) {
                 case 0:
-                    blManager.unlock(p, p.getTargetBlock(null, 255));
+                    blManager.unlock(p, blockLock);
                     p.closeInventory();
                     break;
                 case 3:
@@ -119,7 +113,7 @@ public class BlockLockManagerMenu implements Listener
             ItemStack is = null;
             ArrayList<String> lore = new ArrayList<>();
             lore.add(ChatColor.RED + "Click to remove friend");
-            List<String> allFriendsList = blManager.getFriends(blockLock.getOwner(), blockLock.getBlock());
+            List<String> allFriendsList = blManager.getFriends(blockLock.getOwner(), blockLock.getBlock()).stream().map(UUID::toString).toList();
             for(int i = 0; i < BlockLockManager.MAX_FRIENDS && i < allFriendsList.size(); i++) {
                 p = Bukkit.getOfflinePlayer(allFriendsList.get(i));
                 is = new ItemStack(Material.PLAYER_HEAD, 1);
@@ -156,30 +150,21 @@ public class BlockLockManagerMenu implements Listener
             // Hopper:
             meta = items[3].getItemMeta();
             lore = new ArrayList<>();
-            if(blockLock.isHopperLock())
-                lore.add(ChatColor.GREEN + "on");
-            else
-                lore.add(ChatColor.RED + "off");
+            lore.add(blockLock.isHopperLock() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF");
             meta.setLore(lore);
             items[3].setItemMeta(meta);
 
             // Redstone:
             meta = items[4].getItemMeta();
             lore = new ArrayList<>();
-            if(blockLock.isRedstoneLock())
-                lore.add(ChatColor.GREEN + "on");
-            else
-                lore.add(ChatColor.RED + "off");
+            lore.add(blockLock.isRedstoneLock() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF");
             meta.setLore(lore);
             items[4].setItemMeta(meta);
 
             // Block Below:
             meta = items[5].getItemMeta();
             lore = new ArrayList<>();
-            if(blockLock.isBlockBelowLock())
-                lore.add(ChatColor.GREEN + "on");
-            else
-                lore.add(ChatColor.RED + "off");
+            lore.add(blockLock.isBlockBelowLock() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF");
             meta.setLore(lore);
             items[5].setItemMeta(meta);
 
@@ -192,27 +177,21 @@ public class BlockLockManagerMenu implements Listener
         }
     }
 
-    public void openFriends(Player p) {
+    public boolean openFriends(Player p) {
         if(updateFriendsInvItems()) {
-            p.openInventory(friendsInv);
+            return p.openInventory(friendsInv) != null;
         }
-        else {
-            blManager.sendMessage(p, "ManangerMenu: Friend-Inventory: Item Update Exception (see log for details)");
-        }
+        return false;
     }
 
     public boolean open(Player p) {
         if(updateInvItems()) {
-            p.openInventory(inv);
-            return true;
+            return p.openInventory(inv) != null;
         }
-        else {
-            blManager.sendMessage(p, "ManangerMenu: Inventory: Item Update Exception (see log for details)");
-            return false;
-        }
+        return false;
     }
 
-    // Protecting inv:
+    // Protecting inventory:
 
     /**
      * Preventing the player from moving items from or to inv
@@ -225,7 +204,7 @@ public class BlockLockManagerMenu implements Listener
 
         if(inv.equals(event.getInventory()) || friendsInv.equals(event.getInventory())) {
             if(inv.equals(event.getClickedInventory())) {
-                checkClick(event.getCurrentItem(), (Player) event.getWhoClicked());
+                checkClick(event.getSlot(), (Player) event.getWhoClicked());
             }
             else if(friendsInv.equals(event.getClickedInventory())) {
                 checkFriendsClick(event.getCurrentItem());
@@ -235,7 +214,7 @@ public class BlockLockManagerMenu implements Listener
     }
 
     /**
-     * Preventing anyone(hoppers, etc) from grabbing items from inv
+     * Preventing anyone(hoppers, etc.) from grabbing items from inv
      */
     @EventHandler
     public void onInventoryMoveItem(InventoryMoveItemEvent event) {

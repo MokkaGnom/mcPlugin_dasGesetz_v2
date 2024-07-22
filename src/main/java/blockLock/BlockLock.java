@@ -3,191 +3,197 @@ package blockLock;
 // Bukkit:
 
 import manager.Manager;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.Door;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.metadata.FixedMetadataValue;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class BlockLock
 {
-	private final UUID owner;
-	private final Set<UUID> friends;
-	private final Block block;
-	private boolean hopperLock;
-	private boolean redstoneLock;
-	private boolean blockBelowLock;
-	private BlockLock secondBlockLock;
-	private BlockLockManagerMenu blmm;
+    private final UUID owner;
+    private final Set<UUID> localFriends;
+    private final Block block;
+    private boolean hopperLock;
+    private boolean redstoneLock;
+    private boolean blockBelowLock;
+    private BlockLock secondBlockLock;
 
-	public BlockLock(Block block, UUID owner)
-	{
-		block.setMetadata(BlockLockManager.META_DATA.BLOCK.LOCK, new FixedMetadataValue(Manager.getInstance(), block.getLocation().toString()));
-		block.setMetadata(BlockLockManager.META_DATA.BLOCK.OWNER, new FixedMetadataValue(Manager.getInstance(), owner.toString()));
-		this.block = block;
-		this.blmm = null;
-		this.owner = owner;
-		this.friends = new HashSet<>();
-		this.hopperLock = true;
-		this.redstoneLock = true;
-		this.blockBelowLock = true;
-		secondBlockLock = null;
-	}
+    public BlockLock(Block block, UUID owner) {
+        this(block, owner, block.getType() != Material.HOPPER, true, block.getBlockData() instanceof Door, new HashSet<>());
+    }
 
-	public void unlock()
-	{
-		block.removeMetadata(BlockLockManager.META_DATA.BLOCK.LOCK, Manager.getInstance());
-		block.removeMetadata(BlockLockManager.META_DATA.BLOCK.OWNER, Manager.getInstance());
-	}
+    public BlockLock(Block block, UUID owner, boolean hopperLock, boolean redstoneLock, boolean blockBelowLock, Set<UUID> localFriends) {
+        block.setMetadata(BlockLockManager.META_DATA.BLOCK.LOCK, new FixedMetadataValue(Manager.getInstance(), block.getLocation().toString()));
+        block.setMetadata(BlockLockManager.META_DATA.BLOCK.OWNER, new FixedMetadataValue(Manager.getInstance(), owner.toString()));
+        this.block = block;
+        this.owner = owner;
+        this.localFriends = localFriends;
+        this.hopperLock = hopperLock;
+        this.redstoneLock = redstoneLock;
+        this.blockBelowLock = blockBelowLock;
+        this.secondBlockLock = null;
+    }
 
-	public boolean createManagerMenu(BlockLockManager blManager)
-	{
-		if (blmm == null)
-		{
-			this.blmm = new BlockLockManagerMenu(blManager, this);
-			Manager.getInstance().getServer().getPluginManager().registerEvents(blmm, Manager.getInstance());
-			return true;
-		}
-		return false;
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hash(owner, block.getLocation());
+    }
 
-	public boolean openManagerInventory(Player p)
-	{
-		return blmm.open(p);
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if(this == obj) return true;
+        if(obj == null) return false;
+        if(obj instanceof BlockLock bl) {
+            return this.owner.equals(bl.owner) && this.block.equals(bl.block);
+        }
+        return false;
+    }
 
-	/**
-	 * 
-	 * @return 0: No Chest | 1: Single | 2: Right | 3: Left
-	 */
-	static public int checkIfDoubleChest(Block b)
-	{
-		if (b.getBlockData() instanceof Chest chest)
-		{
-			Chest.Type type = chest.getType();
-			if (type.equals(Chest.Type.SINGLE))
-				return 1;
-			else if (type.equals(Chest.Type.LEFT))
-				return 2;
-			else if (type.equals(Chest.Type.RIGHT))
-				return 3;
-		}
-		return 0;
-	}
+    public boolean save(ConfigurationSection blockLockSection) {
+        if(blockLockSection == null) return false;
+        blockLockSection.set("Location", this.getBlock().getLocation());
+        blockLockSection.set("HopperLock", this.isHopperLock());
+        blockLockSection.set("RedstoneLock", this.isRedstoneLock());
+        blockLockSection.set("BlockBelowLock", this.isBlockBelowLock());
 
-	/**
-	 * 
-	 * @return 0: No Chest | 1: Single | 2: Right | 3: Left
-	 */
-	public int checkIfDoubleChest()
-	{
-		return checkIfDoubleChest(getBlock());
-	}
+        for(UUID uuid : localFriends) {
+            blockLockSection.set("LocalFriends", uuid.toString());
+        }
 
-	public boolean checkIfDoor()
-	{
-		return (getBlock().getBlockData() instanceof Door);
-	}
+        //blockLockSection.set("SecondBlockLock", ); //TODO
+        return true;
+    }
 
-	public boolean addFriend(UUID friend)
-	{
-		if (!friends.contains(friend))
-		{
-			friends.add(friend);
-			return true;
-		}
-		return false;
-	}
+    public static BlockLock load(UUID owner, ConfigurationSection blockLockSection) {
+        if(owner == null || blockLockSection == null) return null;
+        Location location = blockLockSection.getLocation("Location");
+        if(location == null) return null;
+        boolean hopperLock = blockLockSection.getBoolean("HopperLock");
+        boolean redstoneLock = blockLockSection.getBoolean("RedstoneLock");
+        boolean blockBelowLock = blockLockSection.getBoolean("BlockBelowLock");
+        List<String> friendsList = blockLockSection.getStringList("LocalFriends");
+        return new BlockLock(location.getBlock(),
+                owner, hopperLock, redstoneLock, blockBelowLock,
+                friendsList.stream().map(UUID::fromString).collect(Collectors.toSet()));
+    }
 
-	public boolean removeFriend(UUID friend)
-	{
-		return friends.remove(friend);
-	}
+    public void removeMetadata() {
+        block.removeMetadata(BlockLockManager.META_DATA.BLOCK.LOCK, Manager.getInstance());
+        block.removeMetadata(BlockLockManager.META_DATA.BLOCK.OWNER, Manager.getInstance());
+    }
 
-	public boolean checkIfFriend(UUID uuid) {
-		return friends.contains(uuid);
-	}
+    public boolean openManagerMenu(Player p, BlockLockManager blManager) {
+        BlockLockManagerMenu blmm = new BlockLockManagerMenu(blManager, this);
+        Manager.getInstance().getServer().getPluginManager().registerEvents(blmm, Manager.getInstance());
+        return blmm.open(p);
+    }
 
-	// Getter/Setter
+    /**
+     * @return 0: No Chest | 1: Single | 2: Right | 3: Left
+     */
+    static public int isDoubleChest(Block b) {
+        if(b.getBlockData() instanceof Chest chest) {
+            Chest.Type type = chest.getType();
+            if(type.equals(Chest.Type.SINGLE))
+                return 1;
+            else if(type.equals(Chest.Type.LEFT))
+                return 2;
+            else if(type.equals(Chest.Type.RIGHT))
+                return 3;
+        }
+        return 0;
+    }
 
-	public boolean isHopperLock()
-	{
-		return hopperLock;
-	}
+    /**
+     * @return 0: No Chest | 1: Single | 2: Right | 3: Left
+     */
+    public int isDoubleChest() {
+        return isDoubleChest(getBlock());
+    }
 
-	public void setHopperLock(boolean hopperLock)
-	{
-		this.hopperLock = hopperLock;
-	}
+    public boolean isDoor() {
+        return (getBlock().getBlockData() instanceof Door);
+    }
 
-	public boolean isRedstoneLock()
-	{
-		return redstoneLock;
-	}
+    public boolean addFriend(UUID friend) {
+        if(friend != owner) {
+            return localFriends.add(friend);
+        }
+        return false;
+    }
 
-	public void setRedstoneLock(boolean redstoneLock)
-	{
-		this.redstoneLock = redstoneLock;
-	}
+    public boolean removeFriend(UUID friend) {
+        return localFriends.remove(friend);
+    }
 
-	public boolean isBlockBelowLock()
-	{
-		return blockBelowLock;
-	}
+    public boolean checkIfFriend(UUID uuid) {
+        return localFriends.contains(uuid);
+    }
 
-	public void setBlockBelowLock(boolean blockBelowLock)
-	{
-		this.blockBelowLock = blockBelowLock;
-	}
+    // Getter/Setter
 
-	public Block getBlock()
-	{
-		return this.block;
-	}
+    public boolean isHopperLock() {
+        return hopperLock;
+    }
 
-	public UUID getOwner()
-	{
-		return owner;
-	}
+    public void setHopperLock(boolean hopperLock) {
+        if(this.block.getType() != Material.HOPPER) {
+            this.hopperLock = hopperLock;
+        }
+    }
 
-	public Inventory getInventory()
-	{
-		if (getBlock().getState() instanceof InventoryHolder inventoryHolder)
-		{
-			return inventoryHolder.getInventory();
-		}
-		return null;
-	}
+    public boolean isRedstoneLock() {
+        return redstoneLock;
+    }
 
-	public Set<UUID> getLocalFriends()
-	{
-		return friends;
-	}
+    public void setRedstoneLock(boolean redstoneLock) {
+        this.redstoneLock = redstoneLock;
+    }
 
-	public BlockLockManagerMenu getBlockLockManagerMenu()
-	{
-		return blmm;
-	}
+    public boolean isBlockBelowLock() {
+        return blockBelowLock;
+    }
 
-	public void setBlockLockManagerMenu(BlockLockManagerMenu blmm)
-	{
-		this.blmm = blmm;
-	}
+    public void setBlockBelowLock(boolean blockBelowLock) {
+        if(isDoor()) {
+            this.blockBelowLock = blockBelowLock;
+        }
+    }
 
-	public BlockLock getSecondBlockLock()
-	{
-		return secondBlockLock;
-	}
+    public Block getBlock() {
+        return this.block;
+    }
 
-	public void setSecondBlockLock(BlockLock bl)
-	{
-		secondBlockLock = bl;
-	}
+    public UUID getOwner() {
+        return owner;
+    }
+
+    public Inventory getInventory() {
+        if(getBlock().getState() instanceof InventoryHolder inventoryHolder) {
+            return inventoryHolder.getInventory();
+        }
+        return null;
+    }
+
+    public Set<UUID> getLocalFriends() {
+        return localFriends;
+    }
+
+    public BlockLock getSecondBlockLock() {
+        return secondBlockLock;
+    }
+
+    public void setSecondBlockLock(BlockLock bl) {
+        secondBlockLock = bl;
+    }
 
 }

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import manager.Manager;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.Door;
@@ -14,26 +13,15 @@ public class BlockLockUser
 {
     private UUID uuid;
     private List<BlockLock> blockLocks;
-    private List<UUID> friends;
-    private boolean useSneakMenu;
 
     public BlockLockUser(UUID uuid) {
         this.uuid = uuid;
-        this.blockLocks = new ArrayList<BlockLock>();
-        this.friends = new ArrayList<UUID>();
-        useSneakMenu = true;
-    }
-
-    public void createAllBlockLockManagerMenus(BlockLockManager blm) {
-        for(BlockLock i : blockLocks) {
-            i.createManagerMenu(blm);
-        }
+        this.blockLocks = new ArrayList<>();
     }
 
     public BlockLock createBlockLock(Block b, BlockLockManager blm) {
-        BlockLock bl = new BlockLock(b, this.getUuid());
+        BlockLock bl = new BlockLock(b, this.uuid);
         blockLocks.add(bl);
-        bl.createManagerMenu(blm);
 
         /*
          * int doubleChestIndex = bl.checkIfDoubleChest(); BlockLockManager.sendMessage(uuid, "doubleChestIndex: " + doubleChestIndex); if (doubleChestIndex > 1) { try { Block block = null;
@@ -50,19 +38,17 @@ public class BlockLockUser
          * e.getLocalizedMessage(), true); } }
          */
 
-        if(bl.checkIfDoor()) {
+        if(bl.isDoor()) {
             try {
                 if(bl.getBlock().getRelative(0, 1, 0).getBlockData() instanceof Door) {
-                    BlockLock bl2 = new BlockLock(b.getRelative(0, 1, 0), this.getUuid());
+                    BlockLock bl2 = new BlockLock(b.getRelative(0, 1, 0), this.uuid);
                     blockLocks.add(bl2);
-                    bl2.setBlockLockManagerMenu(bl.getBlockLockManagerMenu());
                     bl.setSecondBlockLock(bl2);
                     bl2.setSecondBlockLock(bl);
                 }
                 else if(bl.getBlock().getRelative(0, -1, 0).getBlockData() instanceof Door) {
-                    BlockLock bl2 = new BlockLock(b.getRelative(0, -1, 0), this.getUuid());
+                    BlockLock bl2 = new BlockLock(b.getRelative(0, -1, 0), this.uuid);
                     blockLocks.add(bl2);
-                    bl2.setBlockLockManagerMenu(bl.getBlockLockManagerMenu());
                     bl.setSecondBlockLock(bl2);
                     bl2.setSecondBlockLock(bl);
                 }
@@ -72,72 +58,5 @@ public class BlockLockUser
         }
 
         return bl;
-    }
-
-    public boolean removeBlockLock(BlockLock bl, BlockLockManager blm) {
-        bl.getBlock().removeMetadata(BlockLockManager.BLOCK_LOCK_KEY, Manager.getInstance());
-        BlockLock bl2 = bl.getSecondBlockLock();
-        if(bl2 != null)
-            bl2.getBlock().removeMetadata(BlockLockManager.BLOCK_LOCK_KEY, Manager.getInstance());
-
-        return blockLocks.remove(bl) && blockLocks.remove(bl2);
-    }
-
-    public boolean addFriend(UUID friend) {
-        if(friends.contains(friend))
-            return false;
-        else {
-            friends.add(friend);
-            return true;
-        }
-    }
-
-    public boolean addFriend(UUID friend, Block block) {
-        for(BlockLock i : blockLocks) {
-            if(i.getBlock().equals(block)) {
-                i.addFriend(friend);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean removeFriend(UUID friend) {
-        if(friends.contains(friend)) {
-            friends.remove(friend);
-            return true;
-        }
-        else
-            return false;
-    }
-
-    public boolean removeFriend(UUID friend, Block block) {
-        for(BlockLock i : blockLocks) {
-            if(i.getBlock().equals(block)) {
-                i.removeFriend(friend);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public void setUseSneakMenu(boolean usm) {
-        useSneakMenu = usm;
-    }
-
-    public UUID getUuid() {
-        return uuid;
-    }
-
-    public List<BlockLock> getBlockLocks() {
-        return blockLocks;
-    }
-
-    public List<UUID> getFriends() {
-        return friends;
-    }
-
-    public boolean getUseSneakMenu() {
-        return useSneakMenu;
     }
 }
