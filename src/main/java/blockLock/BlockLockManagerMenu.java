@@ -23,9 +23,9 @@ import java.util.UUID;
 public class BlockLockManagerMenu implements Listener
 {
     private static final int INV_SIZE = 9;
-    private static final Material[] material = {Material.RED_WOOL, Material.AIR, Material.AIR, Material.HOPPER, Material.REDSTONE, Material.GRASS_BLOCK, Material.AIR, Material.AIR,
+    private static final Material[] material = {Material.RED_WOOL, Material.AIR, Material.AIR, Material.HOPPER, Material.AIR, Material.REDSTONE, Material.AIR, Material.AIR,
             Material.PLAYER_HEAD};
-    private static final String[] name = {"Unlock", "", "", "Lock Hopper", "Lock Redstone", "Lock Block Below", "", "", "Friends"};
+    private static final String[] name = {"Unlock", "", "", "Lock Hopper", "", "Lock Redstone", "", "", "Friends"};
 
     private final BlockLockManager blManager;
     private final BlockLock blockLock;
@@ -74,11 +74,8 @@ public class BlockLockManagerMenu implements Listener
                 case 3:
                     blockLock.setHopperLock(!blockLock.isHopperLock());
                     break;
-                case 4:
-                    blockLock.setRedstoneLock(!blockLock.isRedstoneLock());
-                    break;
                 case 5:
-                    blockLock.setBlockBelowLock(!blockLock.isBlockBelowLock());
+                    blockLock.setRedstoneLock(!blockLock.isRedstoneLock());
                     break;
                 case 8:
                     openFriends(p);
@@ -155,16 +152,9 @@ public class BlockLockManagerMenu implements Listener
             items[3].setItemMeta(meta);
 
             // Redstone:
-            meta = items[4].getItemMeta();
-            lore = new ArrayList<>();
-            lore.add(blockLock.isRedstoneLock() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF");
-            meta.setLore(lore);
-            items[4].setItemMeta(meta);
-
-            // Block Below:
             meta = items[5].getItemMeta();
             lore = new ArrayList<>();
-            lore.add(blockLock.isBlockBelowLock() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF");
+            lore.add(blockLock.isRedstoneLock() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF");
             meta.setLore(lore);
             items[5].setItemMeta(meta);
 
@@ -191,6 +181,7 @@ public class BlockLockManagerMenu implements Listener
         return false;
     }
 
+    //------------------------------------------------------------------------------------------------------------------
     // Protecting inventory:
 
     /**

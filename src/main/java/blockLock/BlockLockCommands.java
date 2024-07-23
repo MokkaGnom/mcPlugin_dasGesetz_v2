@@ -11,6 +11,7 @@ import utility.ErrorMessage;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class BlockLockCommands implements TabExecutor
@@ -43,6 +44,10 @@ public class BlockLockCommands implements TabExecutor
 
         if(args.length == 1) // lock/unlock/listFriends
         {
+            if(args[0].equalsIgnoreCase("test")) {
+
+            }
+
             if(args[0].equalsIgnoreCase(CommandStrings.UNLOCK)) {
                 blManager.unlock(player, block);
             }

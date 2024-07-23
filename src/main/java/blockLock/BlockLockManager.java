@@ -4,10 +4,9 @@ import manager.ManagedPlugin;
 import manager.Manager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.Chest;
-import org.bukkit.block.Hopper;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -19,7 +18,10 @@ import org.bukkit.entity.Wither;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.*;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -40,12 +42,22 @@ import static blockLock.BlockLockConstants.*;
 
 public class BlockLockManager implements Listener, ManagedPlugin
 {
-    public static final Set<Material> LOCKABLE_BLOCKS = Set.of(Material.ACACIA_DOOR, Material.ACACIA_TRAPDOOR, Material.BIRCH_DOOR, Material.BIRCH_TRAPDOOR, Material.CRIMSON_DOOR,
-            Material.CRIMSON_TRAPDOOR, Material.DARK_OAK_DOOR, Material.DARK_OAK_TRAPDOOR, Material.IRON_DOOR, Material.IRON_TRAPDOOR, Material.JUNGLE_DOOR, Material.JUNGLE_TRAPDOOR,
-            Material.MANGROVE_DOOR, Material.MANGROVE_TRAPDOOR, Material.OAK_DOOR, Material.OAK_TRAPDOOR, Material.SPRUCE_DOOR, Material.SPRUCE_TRAPDOOR, Material.WARPED_DOOR,
-            Material.WARPED_TRAPDOOR, Material.CHEST, Material.TRAPPED_CHEST, Material.HOPPER, Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER, Material.BARREL,
-            Material.BREWING_STAND, Material.OAK_FENCE_GATE, Material.BIRCH_FENCE_GATE, Material.ACACIA_FENCE_GATE, Material.BAMBOO_FENCE_GATE, Material.CHERRY_FENCE_GATE,
-            Material.JUNGLE_FENCE_GATE, Material.SPRUCE_FENCE_GATE, Material.WARPED_FENCE_GATE, Material.CRIMSON_FENCE_GATE, Material.DARK_OAK_FENCE_GATE, Material.MANGROVE_FENCE_GATE);
+    public static final Set<Material> LOCKABLE_BLOCKS = Set.of(
+            Material.ACACIA_DOOR, Material.ACACIA_TRAPDOOR, Material.ACACIA_FENCE_GATE,
+            Material.BIRCH_DOOR, Material.BIRCH_TRAPDOOR, Material.BIRCH_FENCE_GATE,
+            Material.BAMBOO_DOOR, Material.BAMBOO_TRAPDOOR, Material.BAMBOO_FENCE_GATE,
+            Material.CRIMSON_DOOR, Material.CRIMSON_TRAPDOOR, Material.CRIMSON_FENCE_GATE,
+            Material.CHERRY_DOOR, Material.CHERRY_TRAPDOOR, Material.CHERRY_FENCE_GATE,
+            Material.DARK_OAK_DOOR, Material.DARK_OAK_TRAPDOOR, Material.DARK_OAK_FENCE_GATE,
+            Material.JUNGLE_DOOR, Material.JUNGLE_TRAPDOOR, Material.JUNGLE_FENCE_GATE,
+            Material.MANGROVE_DOOR, Material.MANGROVE_TRAPDOOR, Material.MANGROVE_FENCE_GATE,
+            Material.OAK_DOOR, Material.OAK_TRAPDOOR, Material.OAK_FENCE_GATE,
+            Material.SPRUCE_DOOR, Material.SPRUCE_TRAPDOOR, Material.SPRUCE_FENCE_GATE,
+            Material.WARPED_DOOR, Material.WARPED_TRAPDOOR, Material.WARPED_FENCE_GATE,
+            Material.IRON_DOOR, Material.IRON_TRAPDOOR,
+            Material.CHEST, Material.TRAPPED_CHEST, Material.BARREL, Material.HOPPER,
+            Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER,
+            Material.CRAFTER, Material.BREWING_STAND);
 
     public interface META_DATA
     {
@@ -97,10 +109,11 @@ public class BlockLockManager implements Listener, ManagedPlugin
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        Block b = event.getBlockPlaced();
-        if(isBlockLockable(b)) {
-            if(!checkIfNextBlockIsLocked(b, event.getPlayer())) {
-                lock(event.getPlayer(), b);
+        Block block = event.getBlockPlaced();
+        Player player = event.getPlayer();
+        if(isBlockLockable(block) && !isBlockLock(block)) {
+            if(!checkIfNextBlockIsLocked(block, player)) {
+                lock(player, block);
             }
             else {
                 event.setCancelled(true);
@@ -110,17 +123,13 @@ public class BlockLockManager implements Listener, ManagedPlugin
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-            Player player = event.getPlayer();
-            Block block = event.getClickedBlock();
-
-            BlockLock bl = getBlockLock(block);
+        Player player = event.getPlayer();
+        if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && player.isSneaking() && getShowSneakMenu(player)) {
+            BlockLock bl = getBlockLock(event.getClickedBlock());
             if(bl != null) {
                 if(hasPermissionToOpen(player, bl)) {
-                    if(player.isSneaking() && getShowSneakMenu(player)) {
-                        bl.openManagerMenu(player, this);
-                        event.setCancelled(true);
-                    }
+                    bl.openManagerMenu(player, this);
+                    event.setCancelled(true);
                 }
                 else {
                     sendMessage(player, ErrorMessage.NO_PERMISSION.message());
@@ -216,15 +225,17 @@ public class BlockLockManager implements Listener, ManagedPlugin
 
         if(!isBlockLock(block) && hasPermission(player)) {
             BlockLock bl = new BlockLock(block, player.getUniqueId());
-            addBlockLock(bl);
-            sendMessage(player, String.format(BLOCK_LOCKED, block.getType().toString()));
-            return true;
+            if(addBlockLock(bl)) {
+                sendMessage(player, String.format(BLOCK_LOCKED, block.getType().toString()));
+                return true;
+            }
         }
         sendMessage(player, String.format(BLOCK_ALREADY_LOCKED, block.getType().toString()));
         return false;
     }
 
     public void forceUnlock(BlockLock blockLock, Player player) {
+        Manager.getInstance().sendInfoMessage(getMessagePrefix(), "Force-Unlock: " + blockLock.hashCode());
         blockLock.removeMetadata();
         removeBlockLock(blockLock);
         if(player != null) {
@@ -410,17 +421,38 @@ public class BlockLockManager implements Listener, ManagedPlugin
         return null;
     }
 
+    public BlockLock getBlockLockFromLocation(Location location, UUID owner){
+        if(location == null) {
+            return null;
+        }
+
+        BlockLock bl = getBlockLock(location.getBlock());
+        if(bl != null) {
+            return bl;
+        }
+        else{
+            for(BlockLock b : getBlockLocks(owner)) {
+                if(b.getBlock().getLocation().equals(location))
+                {
+                    return b;
+                }
+            }
+        }
+        return null;
+    }
+
     /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
     // Protecting Block:
 
     /**
-     * Preventing BlockLocks (example: doors, hoppers) to be activated by Redstone
+     * Preventing BlockLocks (example: doors, trapdoors) to be activated by Redstone
+     * //TODO: Funktioniert nicht bei Hoppern (Hopper lösen das Event nicht aus) (Evtl. Spigot Bug)
      */
     @EventHandler
     public void onRedstone(BlockRedstoneEvent event) {
         BlockLock bl = getBlockLock(event.getBlock());
         if(bl != null && bl.isRedstoneLock()) {
-            event.setNewCurrent(event.getOldCurrent()); //TODO: Funktioniert nicht bei Hoppern
+            event.setNewCurrent(event.getOldCurrent());
         }
     }
 
@@ -439,23 +471,10 @@ public class BlockLockManager implements Listener, ManagedPlugin
         }
         else {
             BlockLock blUpper = getBlockLock(b.getRelative(0, 1, 0));
-            if(blUpper != null && blUpper.isBlockBelowLock()) {
+            if(blUpper != null && blUpper.isDoor()) {
                 event.setCancelled(true);
 
             }
-        }
-    }
-
-    /**
-     * Wenn Block unter Tür abgebaut wird, muss BlockLock auch entfernt werden
-     *
-     * @param event
-     */
-    @EventHandler
-    public void onBlockPhysic(BlockPhysicsEvent event) {
-        BlockLock bl = getBlockLock(event.getBlock());
-        if(bl != null && bl.isDoor()) {
-            forceUnlock(bl, null);
         }
     }
 
@@ -480,8 +499,12 @@ public class BlockLockManager implements Listener, ManagedPlugin
         if((source != null && !event.getDestination().getType().equals(InventoryType.PLAYER) && source.isHopperLock()) // Prevents Hopper, etc. from PUTTING items IN the chest
                 || (dest != null && dest.isHopperLock())) // Prevents Hopper, etc. from REMOVING items FROM the chest
         {
-            event.setCancelled(true); //TODO: Das bewegte Item verschwindet einfach, es ist weder im Dest noch im Source
+            // Evtl. Spigot Bug
+            event.setCancelled(true); //TODO: Das bewegte Item verschwindet einfach, es ist weder im Dest noch im Source (sowohl beim reinlegen als auch beim rausziehen)
+            // Könnte helfen: HopperInventorySearchEvent
+            //event.getSource().addItem(event.getItem()); // Selbst, dadurch ist das item nicht im source
         }
+
     }
 
     //------------------------------------------------------------------------------------------------------------------
