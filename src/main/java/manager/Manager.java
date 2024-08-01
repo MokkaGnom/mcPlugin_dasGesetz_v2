@@ -15,8 +15,9 @@ import other.Messages;
 import other.VillagerCreator;
 import ping.PingManager;
 
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Main-Class

@@ -4,10 +4,8 @@ import manager.ManagedPlugin;
 import manager.Manager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -58,12 +56,15 @@ public class BlockLockManager implements Listener, ManagedPlugin
             Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER,
             Material.CRAFTER, Material.BREWING_STAND);
 
+    public static final int MAX_LOCAL_FRIENDS = 54;
+
     public interface META_DATA
     {
         interface BLOCK
         {
             String LOCK = "blockLock";
             String OWNER = "blockLockOwner";
+            String SECOND_BLOCK = "secondBlock";
         }
 
         interface PLAYER
@@ -72,7 +73,6 @@ public class BlockLockManager implements Listener, ManagedPlugin
         }
     }
 
-    public static final int MAX_FRIENDS = 54; // Ansonsten müsste man ne zweite Seite im Menü machen
     private final File SAVE_FILE = new File(Manager.getInstance().getDataFolder(), getName() + ".yml");
     private final File SAVE_FILE_FRIENDS = new File(Manager.getInstance().getDataFolder(), getName() + "_globalFriends.yml");
 
@@ -112,7 +112,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && player.isSneaking() && getShowSneakMenu(player)) {
+        if(getShowSneakMenu(player) && event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && player.isSneaking() && player.getInventory().getItemInMainHand().getType() == Material.AIR) {
             BlockLock bl = getBlockLock(event.getClickedBlock());
             if(bl != null) {
                 if(hasPermissionToOpen(player, bl)) {
@@ -267,7 +267,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
         return set;
     }
 
-    public boolean addFriend(UUID owner, Block b, UUID friend) {
+    public boolean addLocalFriend(UUID owner, Block b, UUID friend) {
         if(owner == null || b == null || friend == null || owner == friend)
             return false;
 
@@ -278,7 +278,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
         return false;
     }
 
-    public boolean removeFriend(UUID owner, Block b, UUID friend) {
+    public boolean removeLocalFriend(UUID owner, Block b, UUID friend) {
         if(owner == null || b == null || friend == null || owner == friend)
             return false;
 
@@ -380,7 +380,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
         UUID owner = getOwner(block);
         if(owner != null) {
             for(BlockLock bl : getBlockLocks(owner)) {
-                if(bl.getBlock().equals(block)) {
+                if(bl.isBlockLock(block)) {
                     return bl;
                 }
             }
@@ -388,7 +388,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
         return null;
     }
 
-    public BlockLock getBlockLockFromInventory(Inventory inventory) {
+    public BlockLock getBlockLock(Inventory inventory) {
         if(inventory == null) {
             return null;
         }
@@ -409,31 +409,13 @@ public class BlockLockManager implements Listener, ManagedPlugin
         return null;
     }
 
-    public BlockLock getBlockLockFromLocation(Location location, UUID owner) {
-        if(location == null) {
-            return null;
-        }
-
-        BlockLock bl = getBlockLock(location.getBlock());
-        if(bl != null) {
-            return bl;
-        }
-        else {
-            for(BlockLock b : getBlockLocks(owner)) {
-                if(b.getBlock().getLocation().equals(location)) {
-                    return b;
-                }
-            }
-        }
-        return null;
-    }
-
     /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
     // Protecting Block:
 
     /**
      * Preventing BlockLocks (example: doors, trapdoors) to be activated by Redstone
-     * //TODO: Funktioniert nicht bei Hoppern (Hopper lösen das Event nicht aus) (Evtl. Spigot Bug)
+     * TODO: Funktioniert nicht bei Hoppern (Hopper lösen das Event nicht aus)
+     *  Definitiv Spigot Bug (mit https://www.9minecraft.net/blockprot-plugin/ getestet)
      */
     @EventHandler
     public void onRedstone(BlockRedstoneEvent event) {
@@ -460,7 +442,6 @@ public class BlockLockManager implements Listener, ManagedPlugin
             BlockLock blUpper = getBlockLock(b.getRelative(0, 1, 0));
             if(blUpper != null && blUpper.isDoor()) {
                 event.setCancelled(true);
-
             }
         }
     }
@@ -477,21 +458,24 @@ public class BlockLockManager implements Listener, ManagedPlugin
     }
 
     /**
-     * Preventing anyone(hoppers, etc) than the player from grabbing items from the Container
+     * Preventing anyone(hoppers, etc.) than the player from grabbing items from the Container
      */
     @EventHandler
     public void onInventoryMoveItem(InventoryMoveItemEvent event) {
-        BlockLock source = getBlockLockFromInventory(event.getSource());
-        BlockLock dest = getBlockLockFromInventory(event.getDestination());
-        if((source != null && !event.getDestination().getType().equals(InventoryType.PLAYER) && source.isHopperLock()) // Prevents Hopper, etc. from PUTTING items IN the chest
-                || (dest != null && dest.isHopperLock())) // Prevents Hopper, etc. from REMOVING items FROM the chest
+        // Prevents Hopper, etc. from PUTTING items IN the chest
+        BlockLock source = getBlockLock(event.getSource());
+        if(source != null && !event.getDestination().getType().equals(InventoryType.PLAYER) && source.isHopperLock())
         {
-            // Evtl. Spigot Bug
-            event.setCancelled(true); //TODO: Das bewegte Item verschwindet einfach, es ist weder im Dest noch im Source (sowohl beim reinlegen als auch beim rausziehen)
-            // Könnte helfen: HopperInventorySearchEvent
-            //event.getSource().addItem(event.getItem()); // Selbst, dadurch ist das item nicht im source
+            event.setCancelled(true);
+            return;
         }
-
+        // Prevents Hopper, etc. from REMOVING items FROM the chest
+        BlockLock dest = getBlockLock(event.getDestination());
+        if(dest != null && dest.isHopperLock())
+        {
+            event.setCancelled(true);
+            return;
+        }
     }
 
     //------------------------------------------------------------------------------------------------------------------

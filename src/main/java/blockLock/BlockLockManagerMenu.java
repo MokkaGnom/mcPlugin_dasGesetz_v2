@@ -25,7 +25,7 @@ public class BlockLockManagerMenu implements Listener
     private static final int INV_SIZE = 9;
     private static final Material[] material = {Material.RED_WOOL, Material.AIR, Material.AIR, Material.HOPPER, Material.AIR, Material.REDSTONE, Material.AIR, Material.AIR,
             Material.PLAYER_HEAD};
-    private static final String[] name = {"Unlock", "", "", "Lock Hopper", "", "Lock Redstone", "", "", "Friends"};
+    private static final String[] name = {"Unlock", "", "", "Lock Hopper", "", "Lock Redstone", "", "", "Local Friends"};
 
     private final BlockLockManager blManager;
     private final BlockLock blockLock;
@@ -57,10 +57,10 @@ public class BlockLockManagerMenu implements Listener
 
         SkullMeta skull = (SkullMeta) items[8].getItemMeta();
         skull.setOwningPlayer(Bukkit.getServer().getPlayer(bl.getOwner()));
-        skull.setLore(Arrays.asList("Manage friends"));
+        skull.setLore(Arrays.asList("Manage local friends"));
         items[8].setItemMeta(skull);
 
-        this.friendsInv = Bukkit.createInventory(null, 54, "Friends");
+        this.friendsInv = Bukkit.createInventory(null, BlockLockManager.MAX_LOCAL_FRIENDS, "Local Friends");
         this.friendsItems = null;
     }
 
@@ -92,51 +92,13 @@ public class BlockLockManagerMenu implements Listener
     private boolean checkFriendsClick(ItemStack is) {
         int index = friendsItems.indexOf(is);
         if(index != -1) {
-            SkullMeta skull = (SkullMeta) friendsItems.get(index).getItemMeta();
+            SkullMeta skull = (SkullMeta) is.getItemMeta();
             blockLock.removeFriend(skull.getOwningPlayer().getUniqueId());
             friendsItems.remove(index);
             updateFriendsInvItems();
             return true;
         }
         return false;
-    }
-
-    private boolean updateFriendsInvItems() {
-        try {
-            friendsItems = new ArrayList<>();
-
-            OfflinePlayer p = null;
-            SkullMeta skull = null;
-            ItemStack is = null;
-            ArrayList<String> lore = new ArrayList<>();
-            lore.add(ChatColor.RED + "Click to remove friend");
-            List<String> allFriendsList = blManager.getFriends(blockLock.getOwner(), blockLock.getBlock()).stream().map(UUID::toString).toList();
-            for(int i = 0; i < BlockLockManager.MAX_FRIENDS && i < allFriendsList.size(); i++) {
-                p = Bukkit.getOfflinePlayer(allFriendsList.get(i));
-                is = new ItemStack(Material.PLAYER_HEAD, 1);
-                skull = (SkullMeta) is.getItemMeta();
-                skull.setDisplayName(p.getName());
-                skull.setOwningPlayer(p);
-                skull.setLore(lore);
-                is.setItemMeta(skull);
-                friendsItems.add(is);
-            }
-
-            for(int i = 0; i < friendsItems.size(); i++) {
-                friendsInv.setItem(i, friendsItems.get(i));
-            }
-
-            if(friendsItems.isEmpty()) {
-                for(int i = 0; i < BlockLockManager.MAX_FRIENDS; i++) {
-                    friendsInv.setItem(i, new ItemStack(Material.AIR));
-                }
-            }
-
-            return true;
-        } catch(Exception e) {
-            Manager.getInstance().sendErrorMessage(blManager.getMessagePrefix(), "ManangerMenu: Friend-Inventory: Item Update Exception: " + e.getLocalizedMessage());
-            return false;
-        }
     }
 
     private boolean updateInvItems() {
@@ -167,18 +129,50 @@ public class BlockLockManagerMenu implements Listener
         }
     }
 
-    public boolean openFriends(Player p) {
-        if(updateFriendsInvItems()) {
-            return p.openInventory(friendsInv) != null;
+    private boolean updateFriendsInvItems() {
+        try {
+            friendsItems = new ArrayList<>();
+
+            OfflinePlayer p = null;
+            SkullMeta skull = null;
+            ItemStack is = null;
+            ArrayList<String> lore = new ArrayList<>();
+            lore.add(ChatColor.RED + "Click to remove local friend");
+            List<String> allFriendsList = blManager.getFriends(blockLock.getOwner(), blockLock.getBlock()).stream().map(UUID::toString).toList();
+            for(int i = 0; i < BlockLockManager.MAX_LOCAL_FRIENDS && i < allFriendsList.size(); i++) {
+                p = Bukkit.getOfflinePlayer(allFriendsList.get(i));
+                is = new ItemStack(Material.PLAYER_HEAD, 1);
+                skull = (SkullMeta) is.getItemMeta();
+                skull.setDisplayName(p.getName());
+                skull.setOwningPlayer(p);
+                skull.setLore(lore);
+                is.setItemMeta(skull);
+                friendsItems.add(is);
+            }
+
+            for(int i = 0; i < friendsItems.size(); i++) {
+                friendsInv.setItem(i, friendsItems.get(i));
+            }
+
+            if(friendsItems.isEmpty()) {
+                for(int i = 0; i < BlockLockManager.MAX_LOCAL_FRIENDS; i++) {
+                    friendsInv.setItem(i, new ItemStack(Material.AIR));
+                }
+            }
+
+            return true;
+        } catch(Exception e) {
+            Manager.getInstance().sendErrorMessage(blManager.getMessagePrefix(), "ManangerMenu: Friend-Inventory: Item Update Exception: " + e.getLocalizedMessage());
+            return false;
         }
-        return false;
     }
 
     public boolean open(Player p) {
-        if(updateInvItems()) {
-            return p.openInventory(inv) != null;
-        }
-        return false;
+        return updateInvItems() && p.openInventory(inv) != null;
+    }
+
+    public boolean openFriends(Player p) {
+        return updateFriendsInvItems() && p.openInventory(friendsInv) != null;
     }
 
     //------------------------------------------------------------------------------------------------------------------

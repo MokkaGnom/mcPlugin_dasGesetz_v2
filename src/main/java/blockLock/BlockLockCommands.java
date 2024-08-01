@@ -8,10 +8,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import utility.ErrorMessage;
+import utility.HelperFunctions;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 public class BlockLockCommands implements TabExecutor
@@ -40,7 +40,7 @@ public class BlockLockCommands implements TabExecutor
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         Player player = (Player) sender;
-        Block block = player.getTargetBlock(null, 255);
+        Block block = HelperFunctions.getTargetBlock(player);
 
         if(args.length == 1) // lock/unlock/listFriends
         {
@@ -100,13 +100,13 @@ public class BlockLockCommands implements TabExecutor
                 String friendName = friendPlayer.getName();
 
                 if(args[0].equalsIgnoreCase(CommandStrings.ADD_FRIEND)) {
-                    if(blManager.addFriend(player.getUniqueId(), block, friend))
+                    if(blManager.addLocalFriend(player.getUniqueId(), block, friend))
                         blManager.sendMessage(player, friendName + " added (local)");
                     else
                         blManager.sendMessage(player, "Couldn't add (local) " + friendName);
                 }
                 else if(args[0].equalsIgnoreCase(CommandStrings.REMOVE_FRIEND)) {
-                    if(blManager.removeFriend(player.getUniqueId(), block, friend))
+                    if(blManager.removeLocalFriend(player.getUniqueId(), block, friend))
                         blManager.sendMessage(player, friendName + " removed (local)");
                     else
                         blManager.sendMessage(player, "Couldn't remove (local) " + friendName);
