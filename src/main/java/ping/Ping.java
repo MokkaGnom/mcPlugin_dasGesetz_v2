@@ -6,7 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.AreaEffectCloud;
 import org.bukkit.entity.EntityType;
-import utility.BlockHelper;
+import utility.HelperFunctions;
 
 import java.util.Objects;
 
@@ -20,7 +20,7 @@ public class Ping
     private final Block block;
 
     public Ping(Block block, int time, String playerName, String colorHex) {
-        this.block = BlockHelper.getRelativeBlocks(block, Material.AIR).getFirst();
+        this.block = HelperFunctions.getRelativeBlocks(block, Material.AIR).getFirst();
         this.effectCloud = (AreaEffectCloud) this.block.getWorld().spawnEntity(this.block.getLocation(), EntityType.AREA_EFFECT_CLOUD);
         this.effectCloud.setColor(Objects.requireNonNullElse(PingManager.getColorFromHexString(colorHex), DEFAULT_COLOR));
         this.effectCloud.setDuration((int) Manager.convertSecondsToTicks(time / 1000.d));

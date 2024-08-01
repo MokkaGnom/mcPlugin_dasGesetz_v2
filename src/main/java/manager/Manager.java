@@ -9,13 +9,14 @@ import farming.Timber;
 import home.HomeManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import other.Messages;
 import other.VillagerCreator;
 import ping.PingManager;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Main-Class
@@ -25,9 +26,9 @@ public class Manager extends JavaPlugin
     private static final String JSON_PLUGIN_KEY = "Manager";
     private static final String MESSAGE_PREFIX = String.format(ManagedPlugin.MESSAGE_PREFIX, "DG-Manager");
     private static Manager instance;
-    private final ManagerCommands managerCommands;
 
-    private final Map<ManagedPlugin, Boolean> plugins = new HashMap<>();
+    private final ManagerCommands managerCommands;
+    private final Map<ManagedPlugin, Boolean> plugins;
 
     /**
      * NICHT BENUTZEN !!!
@@ -35,6 +36,7 @@ public class Manager extends JavaPlugin
      */
     public Manager() {
         this.managerCommands = new ManagerCommands();
+        this.plugins = new HashMap<>();
     }
 
     public static Manager getInstance() {
@@ -78,7 +80,7 @@ public class Manager extends JavaPlugin
         this.plugins.put(new PingManager(), true);
         this.plugins.put(new VillagerCreator(), true);
 
-        sendInfoMessage("Enable plugins...");
+        sendInfoMessage(MESSAGE_PREFIX,"Enable plugins...");
 
         managerCommands.onEnable();
         createDefaultConfig();
@@ -89,13 +91,13 @@ public class Manager extends JavaPlugin
             newPlugins.put(pluginEntry.getKey(), enable);
 
             if(enable) {
-                sendInfoMessage("Enable \"" + pluginEntry.getKey().getName() + "\"...");
+                sendInfoMessage(MESSAGE_PREFIX,"Enable \"" + pluginEntry.getKey().getName() + "\"...");
                 pluginEntry.getKey().onEnable();
             }
         }
         this.plugins.putAll(newPlugins);
 
-        sendInfoMessage("All plugins enabled");
+        sendInfoMessage(MESSAGE_PREFIX,"All plugins enabled");
     }
 
     @Override
@@ -117,6 +119,20 @@ public class Manager extends JavaPlugin
     public void disablePlugin(ManagedPlugin plugin) {
         plugin.onDisable();
         this.getConfig().set(getConfigEntryPath(JSON_PLUGIN_KEY, plugin.getName()), false);
+    }
+
+    public void addPermissionToUser(Player player, String permission) {
+        player.addAttachment(this).setPermission(permission, true);
+    }
+
+    public void removePermissionFromUser(Player player, String permission) {
+        player.addAttachment(this).unsetPermission(permission);
+    }
+
+    public List<String> getPermissions() {
+        return plugins.keySet().stream()
+                .flatMap(plugin -> plugin.getPermissions().stream())
+                .toList();
     }
 
     public Map<ManagedPlugin, Boolean> getPlugins() {
@@ -145,26 +161,14 @@ public class Manager extends JavaPlugin
     }
 
     public void sendErrorMessage(String prefix, String message) {
-        Bukkit.getLogger().severe(prefix + " " + message);
-    }
-
-    public void sendErrorMessage(String message) {
-        sendErrorMessage(MESSAGE_PREFIX, message);
+        Bukkit.getLogger().severe(prefix + message);
     }
 
     public void sendWarningMessage(String prefix, String message) {
-        Bukkit.getLogger().warning(prefix + " " + message);
-    }
-
-    public void sendWarningMessage(String message) {
-        sendWarningMessage(MESSAGE_PREFIX, message);
+        Bukkit.getLogger().warning(prefix + message);
     }
 
     public void sendInfoMessage(String prefix, String message) {
-        Bukkit.getLogger().info(prefix + " " + message);
-    }
-
-    public void sendInfoMessage(String message) {
-        sendInfoMessage(MESSAGE_PREFIX, message);
+        Bukkit.getLogger().info(prefix + message);
     }
 }

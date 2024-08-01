@@ -30,10 +30,6 @@ public class HomeManager implements ManagedPlugin
     public HomeManager() {
     }
 
-    private String getMessageString(String message) {
-        return ChatColor.GRAY + "[" + ChatColor.BLUE + getName() + ChatColor.GRAY + "] " + ChatColor.WHITE + message;
-    }
-
     /**
      * Damit man beim teleportieren mittig auf dem Block landet
      *
@@ -48,31 +44,10 @@ public class HomeManager implements ManagedPlugin
         );
     }
 
-    public boolean sendMessage(CommandSender sender, List<String> messages) {
-        if(sender != null) {
-            for(String message : messages) {
-                sender.sendMessage(getMessageString(message));
-            }
-            return true;
+    public void sendMessage(CommandSender sender, List<String> messages) {
+        for(String message : messages) {
+            sendMessage(sender, message);
         }
-        return false;
-    }
-
-    public boolean sendMessage(CommandSender sender, String message) {
-        if(sender != null) {
-            sender.sendMessage(getMessageString(message));
-            return true;
-        }
-        return false;
-    }
-
-    public boolean sendErrorMessage(CommandSender sender, String message) {
-        if(sender != null) {
-            sender.sendMessage(getMessageString(message));
-            Manager.getInstance().sendWarningMessage(getMessagePrefix(), message);
-            return true;
-        }
-        return false;
     }
 
     public ErrorMessage addHome(UUID playerUUID, String homeName, Location location) {
@@ -163,11 +138,6 @@ public class HomeManager implements ManagedPlugin
     }
 
     @Override
-    public boolean hasPermission(Permissible permissible) {
-        return permissible.hasPermission("dg.homePermission");
-    }
-
-    @Override
     public boolean onEnable() {
         loadFromFile();
         try {
@@ -175,7 +145,7 @@ public class HomeManager implements ManagedPlugin
             Manager.getInstance().getCommand(HomeCommands.CommandStrings.ROOT).setExecutor(hc);
             Manager.getInstance().getCommand(HomeCommands.CommandStrings.ROOT).setTabCompleter(hc);
         } catch(NullPointerException e) {
-            Manager.getInstance().sendErrorMessage(e.getMessage());
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
             onDisable();
             return false;
         }
@@ -189,13 +159,23 @@ public class HomeManager implements ManagedPlugin
             Manager.getInstance().getCommand(HomeCommands.CommandStrings.ROOT).setExecutor(null);
             Manager.getInstance().getCommand(HomeCommands.CommandStrings.ROOT).setTabCompleter(null);
         } catch(NullPointerException e) {
-            Manager.getInstance().sendErrorMessage(e.getMessage());
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
         }
     }
 
     @Override
     public String getName() {
         return "Homes";
+    }
+
+    @Override
+    public List<String> getPermissions() {
+        return List.of("dg.homePermission");
+    }
+
+    @Override
+    public ChatColor getMessageColor() {
+        return ChatColor.BLUE;
     }
 
     @Override

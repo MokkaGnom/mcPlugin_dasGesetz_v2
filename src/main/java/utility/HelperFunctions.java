@@ -1,12 +1,14 @@
 package utility;
 
+import manager.ManagedPlugin;
+import manager.ManagerCommands;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public final class BlockHelper
+public final class HelperFunctions
 {
     public static final int[][] OFFSETS = {
             {0, 1, 0},
@@ -26,5 +28,9 @@ public final class BlockHelper
             }
         }
         return blocks;
+    }
+
+    public static boolean isArgumentTrue(String argument) {
+        return !(ManagedPlugin.ENABLE_STRINGS.stream().filter(s -> s.equalsIgnoreCase(argument)).toList().isEmpty());
     }
 }

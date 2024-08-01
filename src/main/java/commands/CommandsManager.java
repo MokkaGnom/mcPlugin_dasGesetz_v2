@@ -2,9 +2,11 @@ package commands;
 
 import manager.ManagedPlugin;
 import manager.Manager;
+import org.bukkit.ChatColor;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.permissions.Permissible;
 
+import java.util.List;
 import java.util.Map;
 
 public class CommandsManager implements ManagedPlugin
@@ -16,7 +18,8 @@ public class CommandsManager implements ManagedPlugin
     );
 
     private static CommandsManager instance;
-    public static CommandsManager getInstance(){
+
+    public static CommandsManager getInstance() {
         return instance;
     }
 
@@ -29,12 +32,12 @@ public class CommandsManager implements ManagedPlugin
     }
 
     @Override
-    public boolean hasPermission(Permissible permissible) {
+    public boolean hasDefaultUsePermission(Permissible permissible) {
         return false;
     }
 
     @Override
-    public boolean hasPermission(Permissible permissible, Class<?> supervisedClass) {
+    public boolean hasDefaultUsePermission(Permissible permissible, Class<?> supervisedClass) {
         if(supervisedClass == Coords.class) {
             return permissible.hasPermission("dg.coordsPermission");
         }
@@ -44,7 +47,7 @@ public class CommandsManager implements ManagedPlugin
         else if(supervisedClass == WeatherClear.class) {
             return permissible.hasPermission("dg.weatherClearPermission");
         }
-        return hasPermission(permissible);
+        return hasDefaultUsePermission(permissible);
     }
 
     @Override
@@ -75,5 +78,15 @@ public class CommandsManager implements ManagedPlugin
     @Override
     public String getName() {
         return "Commands";
+    }
+
+    @Override
+    public List<String> getPermissions() {
+        return List.of("");
+    }
+
+    @Override
+    public ChatColor getMessageColor() {
+        return ManagedPlugin.DEFAULT_CHAT_COLOR;
     }
 }

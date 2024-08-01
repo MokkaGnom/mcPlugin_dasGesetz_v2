@@ -37,7 +37,7 @@ public class PingCommands implements TabExecutor
             return true;
         }
 
-        if(!pm.hasPermission(sender)) {
+        if(!pm.hasDefaultUsePermission(sender)) {
             sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
             return true;
         }
@@ -46,7 +46,7 @@ public class PingCommands implements TabExecutor
             Color color = PingManager.getColorFromHexString(args[1]);
             if(color != null) {
                 pm.setPlayerColor((Player) sender, args[1]);
-                sender.sendMessage(pm.getMessageString(ChatColor.of("#" + args[1]) + SUCCESSFULLY_CHANGED_COLOR));
+                pm.sendMessage(sender, ChatColor.of("#" + args[1]) + SUCCESSFULLY_CHANGED_COLOR);
                 return true;
             }
             sender.sendMessage(ErrorMessage.UNKNOWN_ARGUMENT.message());

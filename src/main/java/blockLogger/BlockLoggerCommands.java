@@ -38,7 +38,7 @@ public class BlockLoggerCommands implements TabExecutor
             return true;
         }
 
-        if(!blm.hasPermission(sender)) {
+        if(!blm.hasDefaultUsePermission(sender)) {
             sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
             return true;
         }

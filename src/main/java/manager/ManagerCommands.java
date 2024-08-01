@@ -1,10 +1,12 @@
 package manager;
 
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
-import org.bukkit.permissions.Permissible;
+import org.bukkit.entity.Player;
 import utility.ErrorMessage;
+import utility.HelperFunctions;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,92 +14,134 @@ import java.util.stream.Stream;
 
 public class ManagerCommands implements TabExecutor, ManagedPlugin
 {
-    public static final String COMMAND = "dgManager";
-
-    private static final List<String> PLUGIN_DISABLE_STRINGS = List.of("0", "disable", "false");
-    private static final List<String> PLUGIN_ENABLE_STRINGS = List.of("1", "enable", "true");
-    private static final String PLUGIN_ENABLED = "Plugin: \"%s\" wurde aktiviert";
-    private static final String PLUGIN_DISABLED = "Plugin: \"%s\" wurde deaktiviert";
-
-    public ManagerCommands ()
+    public interface CommandStrings
     {
+        String ROOT = "dgManager";
+        String MANAGE = "Manage";
+        String PERMISSION = "Permission";
+
+        List<String> FIRST_ARGUMENT = List.of(MANAGE, PERMISSION);
+        List<String> SECOND_ARGUMENT = null;
+        List<String> THIRD_ARGUMENT = Stream.concat(DISABLE_STRINGS.stream(), ENABLE_STRINGS.stream()).collect(Collectors.toList());
+    }
+
+    public ManagerCommands() {
     }
 
     @Override
-    public boolean onCommand (CommandSender sender, Command command, String label, String[] args)
-    {
-        if (args.length == 2)
-        {
-            List<ManagedPlugin> foundPluginList = Manager.getInstance().getPlugins().keySet().stream()
-                    .filter(plugin -> plugin.getName().equals(args[0])).toList();
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if(!(sender instanceof Player player)) {
+            sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
+            return false;
+        }
 
-            if (foundPluginList.isEmpty())
-            {
-                sender.sendMessage(ErrorMessage.UNKNOWN_PLUGIN.message());
+        if(args.length == 3) {
+            if(args[0].equalsIgnoreCase(CommandStrings.MANAGE)) {
+                ManagedPlugin plugin = Manager.getInstance().getPlugins().keySet().stream()
+                        .filter(p -> p.getName().equalsIgnoreCase(args[1]))
+                        .findFirst().orElse(null);
+                if(plugin != null) {
+                    if(HelperFunctions.isArgumentTrue(args[2])) {
+                        Manager.getInstance().enablePlugin(plugin);
+                        sendMessage(sender, String.format("Plugin: \"%s\" wurde aktiviert", plugin.getName()));
+
+                    }
+                    else {
+                        Manager.getInstance().disablePlugin(plugin);
+                        sendMessage(sender, String.format("Plugin: \"%s\" wurde deaktiviert", plugin.getName()));
+                    }
+                    return true;
+                }
+                else {
+                    sendMessage(sender, "Unknown Plugin!");
+                    return true;
+                }
+
+            }
+            else if(args[0].equalsIgnoreCase(CommandStrings.PERMISSION)) {
+                String permission = Manager.getInstance().getPermissions().stream()
+                        .filter(s -> s.equalsIgnoreCase(args[1]))
+                        .findFirst().orElse(null);
+                if(permission != null) {
+                    if(HelperFunctions.isArgumentTrue(args[2])) {
+                        Manager.getInstance().addPermissionToUser(player, permission);
+                        sendMessage(sender, String.format("Permission \"%s\" added to \"%s\"", permission, player.getName()));
+                    }
+                    else {
+                        Manager.getInstance().removePermissionFromUser(player, permission);
+                        sendMessage(sender, String.format("Permission \"%s\" removed from \"%s\"", permission, player.getName()));
+                    }
+                    return true;
+                }
+                else {
+                    sendMessage(sender, "Unknown Permission!");
+                    return true;
+                }
+            }
+            else {
+                sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
                 return false;
             }
-
-            ManagedPlugin plugin = foundPluginList.getFirst();
-
-            if (!PLUGIN_ENABLE_STRINGS.stream().filter(string -> string.contains(args[1].toLowerCase())).toList().isEmpty())
-            {
-                Manager.getInstance().enablePlugin(plugin);
-                sender.sendMessage(String.format(PLUGIN_ENABLED, plugin.getName()));
-
-            } else
-            {
-                Manager.getInstance().disablePlugin(plugin);
-                sender.sendMessage(String.format(PLUGIN_DISABLED, plugin.getName()));
-            }
-            return true;
-        } else
-        {
-            sender.sendMessage(ErrorMessage.UNKNOWN_SYNTAX.message());
+        }
+        else {
+            sendMessage(sender, ErrorMessage.UNKNOWN_SYNTAX.message());
             return false;
         }
     }
 
     @Override
-    public List<String> onTabComplete (CommandSender sender, Command command, String label, String[] args)
-    {
-        if (args.length == 1)
-        {
-            return Manager.getInstance().getPlugins().keySet().stream().map(ManagedPlugin::getName).collect(Collectors.toList());
-        } else if (args.length == 2)
-        {
-            return Stream.concat(PLUGIN_DISABLE_STRINGS.stream(), PLUGIN_ENABLE_STRINGS.stream()).collect(Collectors.toList());
+    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+        if(args.length == 1) {
+            return CommandStrings.FIRST_ARGUMENT;
+        }
+        else if(args.length == 2) {
+            if(args[0].equalsIgnoreCase(CommandStrings.MANAGE)) {
+                return Manager.getInstance().getPlugins().keySet().stream().map(ManagedPlugin::getName).toList();
+            }
+            else if(args[0].equalsIgnoreCase(CommandStrings.PERMISSION)) {
+                return Manager.getInstance().getPermissions();
+            }
+        }
+        else if(args.length == 3) {
+            return CommandStrings.THIRD_ARGUMENT;
         }
         return ErrorMessage.COMMAND_NO_OPTION_AVAILABLE;
     }
 
     @Override
-    public boolean hasPermission(Permissible permissible) {
-        return permissible.hasPermission("dg.dgManagerPermission");
-    }
-
-    @Override
-    public boolean onEnable ()
-    {
-        try
-        {
-            Manager.getInstance().getCommand(COMMAND).setExecutor(this);
-            Manager.getInstance().getCommand(COMMAND).setTabCompleter(this);
+    public boolean onEnable() {
+        try {
+            Manager.getInstance().getCommand(CommandStrings.ROOT).setExecutor(this);
+            Manager.getInstance().getCommand(CommandStrings.ROOT).setTabCompleter(this);
             return true;
-        } catch (NullPointerException e)
-        {
-            Manager.getInstance().sendErrorMessage(e.getMessage());
+        } catch(NullPointerException e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
             return false;
         }
     }
 
     @Override
-    public void onDisable ()
-    {
+    public void onDisable() {
+        try {
+            Manager.getInstance().getCommand(CommandStrings.ROOT).setExecutor(null);
+            Manager.getInstance().getCommand(CommandStrings.ROOT).setTabCompleter(null);
+        } catch(NullPointerException e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+        }
     }
 
     @Override
-    public String getName ()
-    {
+    public ChatColor getMessageColor() {
+        return ChatColor.GOLD;
+    }
+
+    @Override
+    public List<String> getPermissions() {
+        return List.of("dg.dgManagerPermission");
+    }
+
+    @Override
+    public String getName() {
         return "Manager";
     }
 }

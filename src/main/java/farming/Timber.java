@@ -2,6 +2,7 @@ package farming;
 
 import manager.ManagedPlugin;
 import manager.Manager;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.Leaves;
@@ -15,7 +16,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.permissions.Permissible;
-import utility.BlockHelper;
+import utility.HelperFunctions;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -44,7 +45,7 @@ public class Timber implements Listener, ManagedPlugin
     public void breakLeaves(List<Block> treeTrunkBlocks, Material treeMaterial) {
         Material leaveMaterial = TIMBER_BLOCK_MATERIAL.get(treeMaterial);
         for(Block block : treeTrunkBlocks) {
-            List<Block> relativeBlocks = BlockHelper.getRelativeBlocks(block, leaveMaterial);
+            List<Block> relativeBlocks = HelperFunctions.getRelativeBlocks(block, leaveMaterial);
             for(Block leaveBlock : relativeBlocks) {
                 if(leaveBlock.getBlockData() instanceof Leaves leave && !leave.isPersistent()) {
                     leaveBlock.breakNaturally();
@@ -130,7 +131,7 @@ public class Timber implements Listener, ManagedPlugin
         Block block = event.getBlock();
         Material blockMaterial = event.getBlock().getType();
 
-        if(player.isSneaking() || !hasPermission(player))
+        if(player.isSneaking() || !hasDefaultUsePermission(player))
             return;
 
         // Breaking tree
@@ -141,11 +142,6 @@ public class Timber implements Listener, ManagedPlugin
                 breakLeaves(treeTrunkBlocks, blockMaterial);
             }
         }
-    }
-
-    @Override
-    public boolean hasPermission(Permissible permissible) {
-        return permissible.hasPermission("dg.timberPermission");
     }
 
     @Override
@@ -162,6 +158,16 @@ public class Timber implements Listener, ManagedPlugin
     @Override
     public String getName() {
         return "Timber";
+    }
+
+    @Override
+    public ChatColor getMessageColor() {
+        return ManagedPlugin.DEFAULT_CHAT_COLOR;
+    }
+
+    @Override
+    public List<String> getPermissions() {
+        return List.of("dg.timberPermission");
     }
 
     @Override

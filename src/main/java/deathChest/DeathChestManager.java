@@ -29,7 +29,6 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.permissions.Permissible;
 import utility.ErrorMessage;
 
 import java.util.*;
@@ -66,35 +65,11 @@ public class DeathChestManager implements Listener, ManagedPlugin
         deathChests = new HashMap<>();
     }
 
-    public String getMessageString(String message) {
-        return ChatColor.GRAY + "[" + ChatColor.AQUA + getName() + ChatColor.GRAY + "] " + ChatColor.WHITE + message;
-    }
 
-    public boolean sendMessage(CommandSender receiver, List<String> messages) {
-        if(receiver != null) {
-            for(String message : messages) {
-                receiver.sendMessage(getMessageString(message));
-            }
-            return true;
+    public void sendMessage(CommandSender receiver, List<String> messages) {
+        for(String message : messages) {
+            sendMessage(receiver, message);
         }
-        return false;
-    }
-
-    public boolean sendMessage(CommandSender receiver, String message) {
-        if(receiver != null) {
-            receiver.sendMessage(getMessageString(message));
-            return true;
-        }
-        return false;
-    }
-
-    public boolean sendErrorMessage(CommandSender receiver, String message) {
-        if(receiver != null) {
-            receiver.sendMessage(getMessageString(message));
-            Manager.getInstance().sendErrorMessage(getMessagePrefix(), message);
-            return true;
-        }
-        return false;
     }
 
     public DeathChest createDeathCest(Player player, List<ItemStack> items) {
@@ -182,7 +157,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player p = event.getEntity();
-        if(hasPermission(p)) {
+        if(hasDefaultUsePermission(p)) {
             DeathChest dc = createDeathCest(p, event.getDrops());
             if(dc != null) {
                 event.getDrops().clear();
@@ -205,7 +180,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
             DeathChest dc = getDeathChest(event.getClickedBlock(), event.getPlayer().getUniqueId());
             if(dc != null) {
                 event.setCancelled(true); // To stop the "normal" chest inventory from opening
-                if((dc.checkIfOwner(player.getUniqueId()) && hasPermission(player)) || hasAdminPermission(player)) {
+                if((dc.checkIfOwner(player.getUniqueId()) && hasDefaultUsePermission(player)) || hasAdminPermission(player)) {
                     if(dc.collect()) {
                         removeDeathChest(dc, false);
                     }
@@ -295,16 +270,6 @@ public class DeathChestManager implements Listener, ManagedPlugin
     }
 
     @Override
-    public boolean hasPermission(Permissible permissible) {
-        return permissible.hasPermission("dg.deathChestPermission");
-    }
-
-    @Override
-    public boolean hasAdminPermission(Permissible permissible) {
-        return permissible.hasPermission("dg.deathChestByPassPermission");
-    }
-
-    @Override
     public boolean onEnable() {
         Manager.getInstance().getServer().getPluginManager().registerEvents(this, Manager.getInstance());
         try {
@@ -337,6 +302,16 @@ public class DeathChestManager implements Listener, ManagedPlugin
     @Override
     public String getName() {
         return "DeathChest";
+    }
+
+    @Override
+    public ChatColor getMessageColor() {
+        return ChatColor.AQUA;
+    }
+
+    @Override
+    public List<String> getPermissions() {
+        return List.of("dg.deathChestPermission", "dg.deathChestByPassPermission");
     }
 
     @Override

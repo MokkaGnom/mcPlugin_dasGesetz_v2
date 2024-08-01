@@ -30,8 +30,7 @@ import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.inventory.BlockInventoryHolder;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.permissions.Permissible;
-import utility.BlockHelper;
+import utility.HelperFunctions;
 import utility.ErrorMessage;
 
 import java.io.File;
@@ -89,17 +88,6 @@ public class BlockLockManager implements Listener, ManagedPlugin
         this.globalFriends = new HashMap<>();
     }
 
-    public String getMessageString(String message) {
-        return ChatColor.GRAY + "[" + ChatColor.LIGHT_PURPLE + getName() + ChatColor.GRAY + "] " + ChatColor.WHITE + message;
-    }
-
-    public boolean sendMessage(CommandSender receiver, String message) {
-        if(receiver != null) {
-            receiver.sendMessage(getMessageString(message));
-            return true;
-        }
-        return false;
-    }
 
     @EventHandler
     public void onWorldSave(WorldSaveEvent event) {
@@ -223,7 +211,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
             return false;
         }
 
-        if(!isBlockLock(block) && hasPermission(player)) {
+        if(!isBlockLock(block) && hasDefaultUsePermission(player)) {
             BlockLock bl = new BlockLock(block, player.getUniqueId());
             if(addBlockLock(bl)) {
                 sendMessage(player, String.format(BLOCK_LOCKED, block.getType().toString()));
@@ -315,7 +303,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
 
     public boolean checkIfNextBlockIsLocked(Block b, Player player) {
         BlockLock bl = null;
-        for(int[] offset : BlockHelper.OFFSETS) {
+        for(int[] offset : HelperFunctions.OFFSETS) {
             Block relativeBlock = b.getRelative(offset[0], offset[1], offset[2]);
             if(isBlockLock(relativeBlock)) {
                 bl = getBlockLock(relativeBlock);
@@ -377,7 +365,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
     }
 
     public boolean hasPermissionToOpen(Player player, BlockLock blockLock) {
-        return hasPermission(player) && (
+        return hasDefaultUsePermission(player) && (
                 blockLock.getOwner().equals(player.getUniqueId())
                         || blockLock.checkIfFriend(player.getUniqueId())
                         || getFriends(blockLock.getOwner()).contains(player.getUniqueId())
@@ -421,7 +409,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
         return null;
     }
 
-    public BlockLock getBlockLockFromLocation(Location location, UUID owner){
+    public BlockLock getBlockLockFromLocation(Location location, UUID owner) {
         if(location == null) {
             return null;
         }
@@ -430,10 +418,9 @@ public class BlockLockManager implements Listener, ManagedPlugin
         if(bl != null) {
             return bl;
         }
-        else{
+        else {
             for(BlockLock b : getBlockLocks(owner)) {
-                if(b.getBlock().getLocation().equals(location))
-                {
+                if(b.getBlock().getLocation().equals(location)) {
                     return b;
                 }
             }
@@ -510,11 +497,6 @@ public class BlockLockManager implements Listener, ManagedPlugin
     //------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public boolean hasPermission(Permissible permissible) {
-        return permissible.hasPermission("dg.blockLockPermission");
-    }
-
-    @Override
     public boolean onEnable() {
         BlockLockCommands blc = new BlockLockCommands(this);
         Manager.getInstance().getServer().getPluginManager().registerEvents(this, Manager.getInstance());
@@ -522,7 +504,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
             Manager.getInstance().getCommand(BlockLockCommands.CommandStrings.ROOT).setExecutor(blc);
             Manager.getInstance().getCommand(BlockLockCommands.CommandStrings.ROOT).setTabCompleter(blc);
         } catch(NullPointerException e) {
-            Manager.getInstance().sendErrorMessage(e.getMessage());
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
             onDisable();
             return false;
         }
@@ -538,7 +520,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
             Manager.getInstance().getCommand(BlockLockCommands.CommandStrings.ROOT).setExecutor(null);
             Manager.getInstance().getCommand(BlockLockCommands.CommandStrings.ROOT).setTabCompleter(null);
         } catch(NullPointerException e) {
-            Manager.getInstance().sendErrorMessage(e.getMessage());
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
         }
     }
 
@@ -547,4 +529,13 @@ public class BlockLockManager implements Listener, ManagedPlugin
         return "BlockLock";
     }
 
+    @Override
+    public ChatColor getMessageColor() {
+        return ChatColor.LIGHT_PURPLE;
+    }
+
+    @Override
+    public List<String> getPermissions() {
+        return List.of("dg.blockLockPermission", "dg.blockLockByPassPermission");
+    }
 }

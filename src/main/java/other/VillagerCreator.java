@@ -2,6 +2,7 @@ package other;
 
 import manager.ManagedPlugin;
 import manager.Manager;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -102,7 +103,7 @@ public class VillagerCreator implements Listener, ManagedPlugin
             if(other == null) {
                 return;
             }
-            if(!hasPermission(player) || !hasPermission(other)) {
+            if(!hasDefaultUsePermission(player) || !hasDefaultUsePermission(other)) {
                 remove(player.getUniqueId(), other.getUniqueId());
                 return;
             }
@@ -127,11 +128,6 @@ public class VillagerCreator implements Listener, ManagedPlugin
                 }
             }
         }
-    }
-
-    @Override
-    public boolean hasPermission(Permissible permissible) {
-        return permissible.hasPermission("dg.createVillagerPermission");
     }
 
     @Override
@@ -160,5 +156,15 @@ public class VillagerCreator implements Listener, ManagedPlugin
     @Override
     public String getName() {
         return "VillagerCreator";
+    }
+
+    @Override
+    public ChatColor getMessageColor() {
+        return ManagedPlugin.DEFAULT_CHAT_COLOR;
+    }
+
+    @Override
+    public List<String> getPermissions() {
+        return List.of("dg.createVillagerPermission");
     }
 }

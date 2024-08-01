@@ -15,7 +15,7 @@ public class WeatherClear implements TabExecutor
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(!CommandsManager.getInstance().hasPermission(sender, this.getClass())) {
+        if(!CommandsManager.getInstance().hasDefaultUsePermission(sender, this.getClass())) {
             sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
             return true;
         }

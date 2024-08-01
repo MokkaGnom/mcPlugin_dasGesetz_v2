@@ -42,7 +42,7 @@ public class HomeCommands implements TabExecutor
                     if(targetBlock != null) {
                         ErrorMessage message = homeManager.addHome(player.getUniqueId(), args[1], targetBlock.getLocation());
                         if(message != ErrorMessage.NO_ERROR) {
-                            homeManager.sendErrorMessage(sender, message.message());
+                            homeManager.sendMessage(sender, message.message());
                             return false;
                         }
                         homeManager.sendMessage(sender, String.format(HomeConstants.HOME_ADDED, args[1]));
@@ -56,7 +56,7 @@ public class HomeCommands implements TabExecutor
                 else if(args[0].equalsIgnoreCase(CommandStrings.REMOVE)) {
                     ErrorMessage message = homeManager.removeHome(player.getUniqueId(), args[1]);
                     if(message != ErrorMessage.NO_ERROR) {
-                        homeManager.sendErrorMessage(sender, message.message());
+                        homeManager.sendMessage(sender, message.message());
                         return false;
                     }
                     homeManager.sendMessage(sender, String.format(HomeConstants.HOME_REMOVED, args[1]));
@@ -65,7 +65,7 @@ public class HomeCommands implements TabExecutor
                 else if(args[0].equalsIgnoreCase(CommandStrings.TP)) {
                     ErrorMessage message = homeManager.teleportToHome(player.getUniqueId(), args[1]);
                     if(message != ErrorMessage.NO_ERROR) {
-                        homeManager.sendErrorMessage(sender, message.message());
+                        homeManager.sendMessage(sender, message.message());
                         return false;
                     }
                     homeManager.sendMessage(sender, String.format(HomeConstants.HOME_TELEPORTED, args[1]));
@@ -74,7 +74,7 @@ public class HomeCommands implements TabExecutor
             }
         }
         else {
-            homeManager.sendErrorMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
+            homeManager.sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
             return false;
         }
         homeManager.sendMessage(sender, ErrorMessage.UNKNOWN_SYNTAX.message());
@@ -91,7 +91,7 @@ public class HomeCommands implements TabExecutor
                 return homeManager.getAllHomeNames(player.getUniqueId());
             }
             else {
-                homeManager.sendErrorMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
+                homeManager.sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
             }
         }
         return ErrorMessage.COMMAND_NO_OPTION_AVAILABLE;

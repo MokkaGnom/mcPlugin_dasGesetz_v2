@@ -81,14 +81,10 @@ public class PingManager implements Listener, ManagedPlugin
         }
     }
 
-    public String getMessageString(String message) {
-        return org.bukkit.ChatColor.GRAY + "[" + ChatColor.DARK_PURPLE + getName() + org.bukkit.ChatColor.GRAY + "] " + ChatColor.WHITE + message;
-    }
-
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player p = event.getPlayer();
-        if(hasPermission(p) && checkCooldown(p) && p.getInventory().getItemInOffHand().getType().equals(PING_ITEM_MATERIAL)
+        if(hasDefaultUsePermission(p) && checkCooldown(p) && p.getInventory().getItemInOffHand().getType().equals(PING_ITEM_MATERIAL)
                 && (event.getAction().equals(Action.RIGHT_CLICK_AIR) || event.getAction().equals(Action.RIGHT_CLICK_BLOCK))) {
             Block b = p.getTargetBlock(null, 255);
             String color = null;
@@ -97,7 +93,7 @@ public class PingManager implements Listener, ManagedPlugin
             new Ping(b, time, p.getName(), color);
             p.removeMetadata(COOLDOWN_META_KEY, Manager.getInstance());
             p.setMetadata(COOLDOWN_META_KEY, new FixedMetadataValue(Manager.getInstance(), System.currentTimeMillis()));
-            p.sendMessage(this.getMessageString(String.format(PING_MESSAGE_FORMAT, b.getX(), b.getY(), b.getZ())));
+            sendMessage(p, String.format(PING_MESSAGE_FORMAT, b.getX(), b.getY(), b.getZ()));
         }
     }
 
@@ -127,11 +123,6 @@ public class PingManager implements Listener, ManagedPlugin
     }
 
     @Override
-    public boolean hasPermission(Permissible permissible) {
-        return permissible.hasPermission("dg.pingPermission");
-    }
-
-    @Override
     public boolean onEnable() {
         PingCommands pingCommands = new PingCommands(this);
 
@@ -141,7 +132,7 @@ public class PingManager implements Listener, ManagedPlugin
             Manager.getInstance().getCommand(PingCommands.CommandStrings.ROOT).setTabCompleter(pingCommands);
             return true;
         } catch(NullPointerException e) {
-            Manager.getInstance().sendErrorMessage(e.getMessage());
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
             onDisable();
             return false;
         }
@@ -155,13 +146,23 @@ public class PingManager implements Listener, ManagedPlugin
             Manager.getInstance().getCommand(PingCommands.CommandStrings.ROOT).setExecutor(null);
             Manager.getInstance().getCommand(PingCommands.CommandStrings.ROOT).setTabCompleter(null);
         } catch(NullPointerException e) {
-            Manager.getInstance().sendErrorMessage(e.getMessage());
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
         }
     }
 
     @Override
     public String getName() {
         return "Ping";
+    }
+
+    @Override
+    public ChatColor getMessageColor() {
+        return ChatColor.DARK_PURPLE;
+    }
+
+    @Override
+    public List<String> getPermissions() {
+        return List.of("dg.pingPermission");
     }
 
     @Override

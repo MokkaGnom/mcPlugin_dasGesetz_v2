@@ -5,10 +5,8 @@ import manager.ManagedPlugin;
 import manager.Manager;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.HandlerList;
-import org.bukkit.permissions.Permissible;
 
 import java.io.File;
 import java.util.HashMap;
@@ -43,20 +41,12 @@ public class BlockLoggerManager implements ManagedPlugin
         return instance;
     }
 
-    public String getMessageString(String message) {
-        return ChatColor.GRAY + "[" + ChatColor.YELLOW + getName() + ChatColor.GRAY + "] " + ChatColor.WHITE + message;
-    }
-
     public void logWarning(Material material, String message) {
         Manager.getInstance().sendWarningMessage(String.format(MESSAGE_PREFIX_BLOCKLOGGER_FORMAT, getMessagePrefix(), material.name()), message);
     }
 
     public void logInfo(Material material, String message) {
         Manager.getInstance().sendInfoMessage(String.format(MESSAGE_PREFIX_BLOCKLOGGER_FORMAT, getMessagePrefix(), material.name()), message);
-    }
-
-    public void sendMessage(CommandSender sender, String message) {
-        sender.sendMessage(getMessageString(message));
     }
 
     private void updateConfig() {
@@ -86,11 +76,6 @@ public class BlockLoggerManager implements ManagedPlugin
 
     public Set<Material> getBlockLoggerMaterials() {
         return this.blockLoggerMap.keySet();
-    }
-
-    @Override
-    public boolean hasPermission(Permissible permissible) {
-        return permissible.hasPermission("dg.blockLoggerPerm");
     }
 
     @Override
@@ -131,6 +116,16 @@ public class BlockLoggerManager implements ManagedPlugin
     @Override
     public String getName() {
         return "BlockLogger";
+    }
+
+    @Override
+    public ChatColor getMessageColor() {
+        return ChatColor.YELLOW;
+    }
+
+    @Override
+    public List<String> getPermissions() {
+        return List.of("dg.blockLoggerPerm");
     }
 
     @Override

@@ -2,6 +2,7 @@ package other;
 
 import manager.ManagedPlugin;
 import manager.Manager;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -10,6 +11,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.permissions.Permissible;
 
 import java.util.List;
+import java.util.Objects;
 
 public class Messages implements Listener, ManagedPlugin
 {
@@ -18,16 +20,16 @@ public class Messages implements Listener, ManagedPlugin
     private final String message;
 
     public Messages() {
-        this.message = Manager.getInstance().getConfig().getString(MESSAGE_JSON_KEY);
+        this.message = Objects.requireNonNullElse(Manager.getInstance().getConfig().getString(MESSAGE_JSON_KEY), "Hi");
     }
 
     @EventHandler
     public void OnPlayerJoin(PlayerJoinEvent event) {
-        event.getPlayer().sendMessage((message != null ? message : "Hi"));
+        sendMessage(event.getPlayer(), message);
     }
 
     @Override
-    public boolean hasPermission(Permissible permissible) {
+    public boolean hasDefaultUsePermission(Permissible permissible) {
         return true;
     }
 
@@ -45,6 +47,16 @@ public class Messages implements Listener, ManagedPlugin
     @Override
     public String getName() {
         return "Messages";
+    }
+
+    @Override
+    public ChatColor getMessageColor() {
+        return ChatColor.MAGIC;
+    }
+
+    @Override
+    public List<String> getPermissions() {
+        return List.of("");
     }
 
     @Override
