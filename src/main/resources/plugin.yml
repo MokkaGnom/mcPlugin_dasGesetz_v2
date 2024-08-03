@@ -59,6 +59,10 @@ commands:
     permission: dg.blockLoggerPerm
     aliases:
       - blog
+  prefix:
+    description: Verwaltet prefixe
+    usage: /prefix <list/add/remove/create/delete>
+    permission: dg.prefixUsePermission
 permissions:
   dg.dgManagerPermission:
     description: Allows a Player to use the Manager
@@ -102,3 +106,9 @@ permissions:
   dg.createVillagerPermission:
     description: Allows a Player to spawn a Villager by sneaking with another player
     default: true
+  dg.prefixUsePermission:
+    description: Allows a Player to use the prefix commands
+    default: true
+  dg.prefixAdminPermission:
+    description: Allows a Player to use admin prefix commands
+    default: op

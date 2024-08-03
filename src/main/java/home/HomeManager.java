@@ -2,13 +2,13 @@ package home;
 
 import manager.ManagedPlugin;
 import manager.Manager;
+import manager.Saveable;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.permissions.Permissible;
 import utility.ErrorMessage;
 
 import java.io.File;
@@ -16,7 +16,7 @@ import java.util.*;
 
 import static home.HomeConstants.*;
 
-public class HomeManager implements ManagedPlugin
+public class HomeManager implements ManagedPlugin, Saveable
 {
     private static final String MAX_HOMES_JSON_KEY = "Homes.MaxHomes";
     private static final String MAX_CREATE_DISTANCE_JSON_KEY = "Homes.MaxCreateDistance";
@@ -94,6 +94,7 @@ public class HomeManager implements ManagedPlugin
         }
     }
 
+    @Override
     public boolean saveToFile() {
         for(Map.Entry<UUID, Map<String, Location>> entry : homes.entrySet()) {
             String uuid = entry.getKey().toString();
@@ -116,6 +117,7 @@ public class HomeManager implements ManagedPlugin
         }
     }
 
+    @Override
     public boolean loadFromFile() {
         try {
             saveConfigFile.load(SAVE_FILE);

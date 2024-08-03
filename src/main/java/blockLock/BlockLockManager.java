@@ -2,6 +2,7 @@ package blockLock;
 
 import manager.ManagedPlugin;
 import manager.Manager;
+import manager.Saveable;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -21,6 +22,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -37,7 +39,7 @@ import java.util.stream.Collectors;
 
 import static blockLock.BlockLockConstants.*;
 
-public class BlockLockManager implements Listener, ManagedPlugin
+public class BlockLockManager implements Listener, ManagedPlugin, Saveable
 {
     public static final Set<Material> LOCKABLE_BLOCKS = Set.of(
             Material.ACACIA_DOOR, Material.ACACIA_TRAPDOOR, Material.ACACIA_FENCE_GATE,
@@ -110,14 +112,24 @@ public class BlockLockManager implements Listener, ManagedPlugin
     }
 
     @EventHandler
+    public void onEntityInteract(EntityInteractEvent event) {
+        if(isBlockLock(event.getBlock())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        if(getShowSneakMenu(player) && event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && player.isSneaking() && player.getInventory().getItemInMainHand().getType() == Material.AIR) {
+        if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
             BlockLock bl = getBlockLock(event.getClickedBlock());
             if(bl != null) {
                 if(hasPermissionToOpen(player, bl)) {
-                    bl.openManagerMenu(player, this);
-                    event.setCancelled(true);
+                    if(getShowSneakMenu(player) && player.getInventory().getItemInMainHand().getType() == Material.AIR && player.isSneaking()) {
+                        bl.openManagerMenu(player, this);
+                        event.setCancelled(true);
+
+                    }
                 }
                 else {
                     sendMessage(player, ErrorMessage.NO_PERMISSION.message());
@@ -127,6 +139,8 @@ public class BlockLockManager implements Listener, ManagedPlugin
         }
     }
 
+    //TODO: Friends werden nicht gespeichert
+    @Override
     public boolean saveToFile() {
 
         // Save BlockLocks
@@ -147,7 +161,6 @@ public class BlockLockManager implements Listener, ManagedPlugin
             if(friendSet == null || friendSet.isEmpty())
                 continue;
 
-            //ConfigurationSection uuidSection = saveFriendsConfigFile.createSection(entry.getKey().toString());
             String player = entry.getKey().toString();
             for(UUID uuid : friendSet) {
                 saveFriendsConfigFile.set(player, uuid.toString());
@@ -166,6 +179,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
         }
     }
 
+    @Override
     public boolean loadFromFile() {
         try {
             saveConfigFile.load(SAVE_FILE);
@@ -365,7 +379,7 @@ public class BlockLockManager implements Listener, ManagedPlugin
     }
 
     public boolean hasPermissionToOpen(Player player, BlockLock blockLock) {
-        return hasDefaultUsePermission(player) && (
+        return hasAdminPermission(player) || hasDefaultUsePermission(player) && (
                 blockLock.getOwner().equals(player.getUniqueId())
                         || blockLock.checkIfFriend(player.getUniqueId())
                         || getFriends(blockLock.getOwner()).contains(player.getUniqueId())
@@ -464,15 +478,13 @@ public class BlockLockManager implements Listener, ManagedPlugin
     public void onInventoryMoveItem(InventoryMoveItemEvent event) {
         // Prevents Hopper, etc. from PUTTING items IN the chest
         BlockLock source = getBlockLock(event.getSource());
-        if(source != null && !event.getDestination().getType().equals(InventoryType.PLAYER) && source.isHopperLock())
-        {
+        if(source != null && !event.getDestination().getType().equals(InventoryType.PLAYER) && source.isHopperLock()) {
             event.setCancelled(true);
             return;
         }
         // Prevents Hopper, etc. from REMOVING items FROM the chest
         BlockLock dest = getBlockLock(event.getDestination());
-        if(dest != null && dest.isHopperLock())
-        {
+        if(dest != null && dest.isHopperLock()) {
             event.setCancelled(true);
             return;
         }

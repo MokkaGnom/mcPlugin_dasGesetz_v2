@@ -3,6 +3,7 @@ package other;
 import manager.ManagedPlugin;
 import manager.Manager;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -12,12 +13,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
-import org.bukkit.permissions.Permissible;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 
 public class VillagerCreator implements Listener, ManagedPlugin
 {
+    public static final String VILLAGER_NAME_FORMAT = "Child from %s and %s";
+
     private static class PlayerSneakInfo
     {
         private final Player player1;
@@ -78,6 +81,8 @@ public class VillagerCreator implements Listener, ManagedPlugin
             Entity entity = Objects.requireNonNull(playerSneakInfo.getPlayer1().getLocation().getWorld()).spawnEntity(playerSneakInfo.getPlayer1().getLocation(), EntityType.VILLAGER);
             if(entity instanceof Villager villager) {
                 villager.setBaby();
+                villager.setCustomName(String.format(VILLAGER_NAME_FORMAT, playerSneakInfo.getPlayer1().getName(), playerSneakInfo.getPlayer2().getName()));
+                villager.setCustomNameVisible(true);
             }
         } catch(Exception e) {
             Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
@@ -94,6 +99,10 @@ public class VillagerCreator implements Listener, ManagedPlugin
         return null;
     }
 
+    public boolean isPrevention(Player p1, Player p2) {
+        return p1.getInventory().getLeggings() != null || p2.getInventory().getLeggings() != null;
+    }
+
     @EventHandler
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
@@ -103,7 +112,7 @@ public class VillagerCreator implements Listener, ManagedPlugin
             if(other == null) {
                 return;
             }
-            if(!hasDefaultUsePermission(player) || !hasDefaultUsePermission(other)) {
+            if(!hasDefaultUsePermission(player) || !hasDefaultUsePermission(other) || isPrevention(player, other)) {
                 remove(player.getUniqueId(), other.getUniqueId());
                 return;
             }
@@ -135,7 +144,7 @@ public class VillagerCreator implements Listener, ManagedPlugin
         config.addDefault(MAX_TIME_JSON_KEY, 15000);
         config.setInlineComments(MAX_TIME_JSON_KEY, List.of("Maximale Zeit (ms)"));
 
-        config.addDefault(MAX_DISTANCE_JSON_KEY, 1);
+        config.addDefault(MAX_DISTANCE_JSON_KEY, 2);
         config.setInlineComments(MAX_DISTANCE_JSON_KEY, List.of("Maximale Distanz (Blocks)"));
 
         config.addDefault(SNEAK_COUNT_JSON_KEY, 20);

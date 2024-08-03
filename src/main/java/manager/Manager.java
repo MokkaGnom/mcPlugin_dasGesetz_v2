@@ -7,6 +7,7 @@ import deathChest.DeathChestManager;
 import farming.EasyFarming;
 import farming.Timber;
 import home.HomeManager;
+import messagePrefix.PrefixManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -80,6 +81,7 @@ public class Manager extends JavaPlugin
         this.plugins.put(new Messages(), true);
         this.plugins.put(new PingManager(), true);
         this.plugins.put(new VillagerCreator(), true);
+        this.plugins.put(new PrefixManager(), true);
 
         sendInfoMessage(MESSAGE_PREFIX,"Enable plugins...");
 

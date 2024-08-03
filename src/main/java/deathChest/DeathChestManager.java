@@ -109,19 +109,11 @@ public class DeathChestManager implements Listener, ManagedPlugin
         return block.hasMetadata(DeathChest.METADATA_KEY);
     }
 
-    public DeathChest getDeathChest(Block block, UUID playerUUID) {
-        if(playerUUID != null) {
-            List<DeathChest> chests = getDeathChests(playerUUID).stream().filter(dc -> dc.getLocation().getBlock().equals(block)).toList();
-            if(!chests.isEmpty()) {
-                return chests.getFirst();
-            }
-        }
-        else {
-            for(UUID uuid : deathChests.keySet()) {
-                List<DeathChest> deathChests = getDeathChests(uuid).stream().filter(dc -> dc.getLocation().getBlock().equals(block)).toList();
-                if(!deathChests.isEmpty()) {
-                    return deathChests.getFirst();
-                }
+    public DeathChest getDeathChest(Block block) {
+        for(UUID uuid : deathChests.keySet()) {
+            List<DeathChest> deathChests = getDeathChests(uuid).stream().filter(dc -> dc.getLocation().getBlock().equals(block)).toList();
+            if(!deathChests.isEmpty()) {
+                return deathChests.getFirst();
             }
         }
         return null;
@@ -177,7 +169,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
     public void onPlayerInteract(PlayerInteractEvent event) {
         if(event.getAction() == Action.RIGHT_CLICK_BLOCK && isBlockDeathChest(event.getClickedBlock())) {
             Player player = event.getPlayer();
-            DeathChest dc = getDeathChest(event.getClickedBlock(), event.getPlayer().getUniqueId());
+            DeathChest dc = getDeathChest(event.getClickedBlock());
             if(dc != null) {
                 event.setCancelled(true); // To stop the "normal" chest inventory from opening
                 if((dc.checkIfOwner(player.getUniqueId()) && hasDefaultUsePermission(player)) || hasAdminPermission(player)) {

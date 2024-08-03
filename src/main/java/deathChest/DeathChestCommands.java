@@ -28,15 +28,15 @@ public class DeathChestCommands implements TabExecutor
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(sender instanceof Player player) {
             if(args.length == 1 && args[0].equals(CommandStrings.LIST)) {
-                dcManager.sendMessage(sender, dcManager.getDeathChests(player.getUniqueId()).stream().map(dcManager::getDeathChestInfoForPlayer).toList());
+                List<String> deathChestList = dcManager.getDeathChests(player.getUniqueId()).stream().map(dcManager::getDeathChestInfoForPlayer).toList();
+                dcManager.sendMessage(sender, deathChestList.isEmpty() ? List.of("Keine DeathChests vorhanden") : deathChestList);
                 return true;
             }
-            else
-            {
+            else {
                 dcManager.sendMessage(sender, ErrorMessage.UNKNOWN_SYNTAX.message());
             }
         }
-        else{
+        else {
             dcManager.sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
         }
         return false;
