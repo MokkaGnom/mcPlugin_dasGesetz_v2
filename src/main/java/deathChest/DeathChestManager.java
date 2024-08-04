@@ -110,6 +110,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
     }
 
     public DeathChest getDeathChest(Block block) {
+        if(block == null) return null;
         for(UUID uuid : deathChests.keySet()) {
             List<DeathChest> deathChests = getDeathChests(uuid).stream().filter(dc -> dc.getLocation().getBlock().equals(block)).toList();
             if(!deathChests.isEmpty()) {

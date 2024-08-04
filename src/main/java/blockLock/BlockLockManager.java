@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -90,6 +91,11 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         this.globalFriends = new HashMap<>();
     }
 
+    public void sendMessage(CommandSender sender, List<String> messages) {
+        for(String message : messages) {
+            sendMessage(sender, message);
+        }
+    }
 
     @EventHandler
     public void onWorldSave(WorldSaveEvent event) {
@@ -139,7 +145,6 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         }
     }
 
-    //TODO: Friends werden nicht gespeichert
     @Override
     public boolean saveToFile() {
 
@@ -209,6 +214,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         uuidSection = saveFriendsConfigFile.getConfigurationSection("");
         uuids = uuidSection.getKeys(false);
         for(String uuid : uuids) {
+            //TODO: Friends werden nicht richtig geladen (nur die Keys)
             UUID player = UUID.fromString(uuid);
             List<String> friendsList = uuidSection.getStringList(uuid);
             this.globalFriends.put(player, friendsList.stream().map(UUID::fromString).collect(Collectors.toSet()));
@@ -352,6 +358,13 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
             return UUID.fromString(block.getMetadata(META_DATA.BLOCK.OWNER).getFirst().asString());
         }
         return null;
+    }
+
+    /**
+     * @return KeySet
+     */
+    public Set<UUID> getFriends() {
+        return this.globalFriends.keySet();
     }
 
     public Set<UUID> getFriends(UUID user) {

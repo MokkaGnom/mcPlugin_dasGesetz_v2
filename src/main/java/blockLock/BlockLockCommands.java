@@ -12,7 +12,9 @@ import utility.HelperFunctions;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class BlockLockCommands implements TabExecutor
 {
@@ -45,7 +47,13 @@ public class BlockLockCommands implements TabExecutor
         if(args.length == 1) // lock/unlock/listFriends
         {
             if(args[0].equalsIgnoreCase("test")) {
-
+                for(UUID uuid1 : blManager.getFriends()){
+                    blManager.sendMessage(sender, "K: " + uuid1.toString());
+                    for(UUID uuid2 : blManager.getFriends(uuid1)){
+                       blManager.sendMessage(sender, "V: " + uuid2.toString());
+                    }
+                    blManager.sendMessage(sender, "--------------------");
+                }
             }
 
             if(args[0].equalsIgnoreCase(CommandStrings.UNLOCK)) {
@@ -55,14 +63,16 @@ public class BlockLockCommands implements TabExecutor
                 blManager.lock(player, block);
             }
             else if(args[0].equalsIgnoreCase(CommandStrings.LIST_FRIENDS)) {
-                List<String> friendsList = blManager.getFriends(player.getUniqueId(), block).stream().map(UUID::toString).toList();
+                Set<UUID> friendsList = blManager.getFriends(player.getUniqueId(), block);
+                if(friendsList == null) {
+                    friendsList = blManager.getFriends(player.getUniqueId());
+                }
+
                 if(friendsList.isEmpty()) {
                     blManager.sendMessage(sender, "No friends");
                 }
                 else {
-                    for(String s : friendsList) {
-                        blManager.sendMessage(sender, s);
-                    }
+                    blManager.sendMessage(sender, friendsList.stream().map(UUID::toString).toList());
                 }
             }
             else {

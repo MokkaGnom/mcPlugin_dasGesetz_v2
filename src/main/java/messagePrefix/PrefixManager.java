@@ -1,6 +1,5 @@
 package messagePrefix;
 
-import blockLock.BlockLock;
 import manager.ManagedPlugin;
 import manager.Manager;
 import manager.Saveable;
@@ -14,25 +13,27 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 
 import java.io.File;
 import java.util.*;
 
-import static blockLock.BlockLockConstants.BLOCKS_SAVED;
-import static blockLock.BlockLockConstants.FRIENDS_SAVED;
-
 public class PrefixManager implements Listener, ManagedPlugin, Saveable
 {
     private final File SAVE_FILE = new File(Manager.getInstance().getDataFolder(), getName() + ".yml");
     public static final String META_DATA_KEY = "prefix";
+    public static final int MAX_PREFIX_LENGTH = 20;
 
     private final FileConfiguration saveFile;
     private final List<Prefix> prefixes;
+    private final Map<UUID, Prefix> offlinePrefixes;
 
     public PrefixManager() {
         this.saveFile = YamlConfiguration.loadConfiguration(SAVE_FILE);
         this.prefixes = new ArrayList<>();
+        this.offlinePrefixes = new HashMap<>();
     }
 
     @EventHandler
@@ -40,6 +41,25 @@ public class PrefixManager implements Listener, ManagedPlugin, Saveable
         Prefix prefix = getPrefix(event.getPlayer());
         if(prefix != null) {
             event.setFormat(prefix.toString());
+        }
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event){
+        Player player = event.getPlayer();
+        Prefix prefix = getOfflinePrefix(player);
+        if(prefix != null) {
+            addPrefixToPlayer(player, prefix);
+            removeOfflinePrefix(player);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        Prefix prefix = getPrefix(player);
+        if(prefix != null) {
+            addOfflinePrefix(player, prefix);
         }
     }
 
@@ -56,8 +76,24 @@ public class PrefixManager implements Listener, ManagedPlugin, Saveable
         return null;
     }
 
+    public void addOfflinePrefix(Player player, Prefix prefix) {
+        offlinePrefixes.put(player.getUniqueId(), prefix);
+    }
+
+    public void removeOfflinePrefix(Player player) {
+        offlinePrefixes.remove(player.getUniqueId());
+    }
+
+    public Prefix getOfflinePrefix(Player player) {
+        return offlinePrefixes.get(player.getUniqueId());
+    }
+
     public boolean addPrefixToPlayer(Player player, String prefixName) {
         Prefix prefix = getPrefix(prefixName);
+        return addPrefixToPlayer(player, prefix);
+    }
+
+    public boolean addPrefixToPlayer(Player player, Prefix prefix) {
         if(prefix == null || (prefix.isAdminPrefix() && !hasAdminPermission(player))) {
             return false;
         }
@@ -76,6 +112,9 @@ public class PrefixManager implements Listener, ManagedPlugin, Saveable
     }
 
     public boolean addNewPrefix(String prefixName, String prefixColorString, String nameColorString, boolean isAdminPrefix) {
+        if(prefixName.length() > MAX_PREFIX_LENGTH) {
+            return false;
+        }
         ChatColor prefixColor;
         ChatColor nameColor;
         try {

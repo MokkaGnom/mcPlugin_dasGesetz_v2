@@ -12,4 +12,5 @@ public record ErrorMessage(String message)
     public static final ErrorMessage UNKNOWN_SYNTAX = new ErrorMessage("Unknown Syntax!");
     public static final ErrorMessage UNKNOWN_ARGUMENT = new ErrorMessage("Unknown Argument!");
     public static final ErrorMessage NO_PERMISSION = new ErrorMessage("No Permission!");
+    public static final ErrorMessage PLAYER_NOT_FOUND = new ErrorMessage("Player not found!");
 }
