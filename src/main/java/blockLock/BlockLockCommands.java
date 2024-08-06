@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class BlockLockCommands implements TabExecutor
 {
@@ -46,11 +45,11 @@ public class BlockLockCommands implements TabExecutor
 
         if(args.length == 1) // lock/unlock/listFriends
         {
-            if(args[0].equalsIgnoreCase("test")) {
-                for(UUID uuid1 : blManager.getFriends()){
+            if(args[0].equalsIgnoreCase("test") && blManager.hasAdminPermission(sender)) {
+                for(UUID uuid1 : blManager.getFriends()) {
                     blManager.sendMessage(sender, "K: " + uuid1.toString());
-                    for(UUID uuid2 : blManager.getFriends(uuid1)){
-                       blManager.sendMessage(sender, "V: " + uuid2.toString());
+                    for(UUID uuid2 : blManager.getFriends(uuid1)) {
+                        blManager.sendMessage(sender, "V: " + uuid2.toString());
                     }
                     blManager.sendMessage(sender, "--------------------");
                 }
@@ -84,7 +83,7 @@ public class BlockLockCommands implements TabExecutor
         else if(args.length == 2) {
             // showmenu
             if(args[0].equalsIgnoreCase(CommandStrings.SHOW_MENU)) {
-                boolean bool = args[1].equalsIgnoreCase("true") || args[1].equalsIgnoreCase("1");
+                boolean bool = HelperFunctions.isArgumentTrue(args[1]);
                 blManager.setShowSneakMenu(player, bool);
                 if(bool)
                     blManager.sendMessage(player, "Menu active");
@@ -94,17 +93,15 @@ public class BlockLockCommands implements TabExecutor
             }
 
             // Friends:
-            Player friendPlayer = Bukkit.getPlayer(args[1]);
-            if(friendPlayer == null) {
-                for(OfflinePlayer i : Bukkit.getOfflinePlayers()) {
-                    String name = i.getName();
-                    if(name != null && name.equalsIgnoreCase(args[1])) {
-                        friendPlayer = i.getPlayer();
-                        break;
-                    }
-                }
-            }
-
+            OfflinePlayer friendPlayer = Arrays.stream(Bukkit.getOfflinePlayers())
+                    .filter(offlinePlayer ->
+                    {
+                        String playerName = offlinePlayer.getName();
+                        if(playerName != null) {
+                            return playerName.equalsIgnoreCase(args[1]);
+                        }
+                        return false;
+                    }).findFirst().orElse(null);
             if(friendPlayer != null) {
                 UUID friend = friendPlayer.getUniqueId();
                 String friendName = friendPlayer.getName();
@@ -137,12 +134,11 @@ public class BlockLockCommands implements TabExecutor
                     blManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX.message());
                     return false;
                 }
-                return true;
             }
             else {
-                blManager.sendMessage(player, "Couldn't find player \"" + args[1] + "\"");
-                return true;
+                blManager.sendMessage(player, "Couldn't find player " + args[1]);
             }
+            return true;
         }
         else {
             blManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX.message());

@@ -167,8 +167,9 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
                 continue;
 
             String player = entry.getKey().toString();
+            ConfigurationSection friendsSection = saveFriendsConfigFile.createSection(player);
             for(UUID uuid : friendSet) {
-                saveFriendsConfigFile.set(player, uuid.toString());
+                friendsSection.set(uuid.toString(), "");
             }
         }
 
@@ -186,43 +187,53 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
 
     @Override
     public boolean loadFromFile() {
+        boolean loaded = true;
+        
+        // Load BlockLocks
         try {
             saveConfigFile.load(SAVE_FILE);
-            saveFriendsConfigFile.load(SAVE_FILE_FRIENDS);
-        } catch(Exception e) {
-            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
-            return false;
-        }
-
-        // Load BlockLocks
-        ConfigurationSection uuidSection = saveConfigFile.getConfigurationSection("");
-        Set<String> uuids = uuidSection.getKeys(false);
-        for(String uuid : uuids) {
-            UUID owner = UUID.fromString(uuid);
-            ConfigurationSection blSection = uuidSection.getConfigurationSection(uuid);
-            if(blSection == null)
-                continue;
-            for(String blID : blSection.getKeys(false)) {
-                BlockLock bl = BlockLock.load(owner, blSection.getConfigurationSection(blID));
-                if(bl != null) {
-                    addBlockLock(bl);
+            ConfigurationSection uuidSection = saveConfigFile.getConfigurationSection("");
+            Set<String> uuids = uuidSection.getKeys(false);
+            for(String uuid : uuids) {
+                UUID owner = UUID.fromString(uuid);
+                ConfigurationSection blSection = uuidSection.getConfigurationSection(uuid);
+                if(blSection == null)
+                    continue;
+                for(String blID : blSection.getKeys(false)) {
+                    BlockLock bl = BlockLock.load(owner, blSection.getConfigurationSection(blID));
+                    if(bl != null) {
+                        addBlockLock(bl);
+                    }
                 }
             }
+
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(BLOCKS_LOADED, blockLocks.keySet().size(), blockLocks.values().size()));
+            loaded &= true;
+        } catch(Exception e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            loaded = false;
         }
 
         // Load Global Friends
-        uuidSection = saveFriendsConfigFile.getConfigurationSection("");
-        uuids = uuidSection.getKeys(false);
-        for(String uuid : uuids) {
-            //TODO: Friends werden nicht richtig geladen (nur die Keys)
-            UUID player = UUID.fromString(uuid);
-            List<String> friendsList = uuidSection.getStringList(uuid);
-            this.globalFriends.put(player, friendsList.stream().map(UUID::fromString).collect(Collectors.toSet()));
-        }
+        try {
+            saveFriendsConfigFile.load(SAVE_FILE_FRIENDS);
+            int uuidValueSize = 0;
+            ConfigurationSection uuidSection = saveFriendsConfigFile.getConfigurationSection("");
+            Set<String> uuids = uuidSection.getKeys(false);
+            for(String uuid : uuids) {
+                UUID player = UUID.fromString(uuid);
+                Set<String> friendsList = uuidSection.getConfigurationSection(uuid).getKeys(false);
+                uuidValueSize += friendsList.size();
+                this.globalFriends.put(player, friendsList.stream().map(UUID::fromString).collect(Collectors.toSet()));
+            }
 
-        Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(BLOCKS_LOADED, blockLocks.keySet().size(), blockLocks.entrySet().size()));
-        Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(FRIENDS_LOADED, globalFriends.keySet().size(), globalFriends.entrySet().size()));
-        return true;
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(FRIENDS_LOADED, globalFriends.keySet().size(), uuidValueSize));
+            loaded &= true;
+        } catch(Exception e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            loaded = false;
+        }
+        return loaded;
     }
 
     public boolean lock(Player player, Block block) {
@@ -244,7 +255,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
 
     public void forceUnlock(BlockLock blockLock, Player player) {
         Manager.getInstance().sendInfoMessage(getMessagePrefix(), "Force-Unlock: " + blockLock.hashCode());
-        blockLock.removeMetadata();
+        blockLock.delete();
         removeBlockLock(blockLock);
         if(player != null) {
             sendMessage(player, String.format(BLOCK_UNLOCKED, blockLock.getBlock().getType().toString()));
@@ -258,7 +269,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
     public boolean unlock(Player player, BlockLock blockLock) {
         if(blockLock != null) {
             if(hasPermissionToOpen(player, blockLock)) {
-                blockLock.removeMetadata();
+                blockLock.delete();
                 removeBlockLock(blockLock);
                 sendMessage(player, String.format(BLOCK_UNLOCKED, blockLock.getBlock().getType().toString()));
                 return true;

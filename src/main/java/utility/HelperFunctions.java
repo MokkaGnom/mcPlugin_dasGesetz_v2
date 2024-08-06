@@ -1,10 +1,14 @@
 package utility;
 
 import manager.ManagedPlugin;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +51,16 @@ public final class HelperFunctions
 
     public static Block getTargetBlock(LivingEntity entity) {
         return entity.getTargetBlock(null, 255);
+    }
+
+    public static Entity getTargetEntity(Location startLocation, Vector direction, int maxDistance) {
+        if(startLocation == null || startLocation.getWorld() == null || direction == null || maxDistance <= 0)
+            return null;
+        RayTraceResult result = startLocation.getWorld().rayTraceEntities(startLocation, direction, maxDistance);
+        if(result != null) {
+            return result.getHitEntity();
+        }
+        return null;
     }
 
     public static boolean isArgumentTrue(String argument) {

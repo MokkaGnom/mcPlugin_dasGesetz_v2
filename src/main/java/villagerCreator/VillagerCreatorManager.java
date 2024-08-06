@@ -1,9 +1,9 @@
-package other;
+package villagerCreator;
 
 import manager.ManagedPlugin;
 import manager.Manager;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -13,58 +13,28 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.FixedMetadataValue;
 
 import java.util.*;
 
-public class VillagerCreator implements Listener, ManagedPlugin
+public class VillagerCreatorManager implements Listener, ManagedPlugin
 {
-    public static final String VILLAGER_NAME_FORMAT = "Child from %s and %s";
-
-    private static class PlayerSneakInfo
-    {
-        private final Player player1;
-        private final Player player2;
-        private final Long startTime;
-        private int sneakCount;
-
-        public PlayerSneakInfo(Player player1, Player player2, Long startTime) {
-            this.player1 = player1;
-            this.player2 = player2;
-            this.startTime = startTime;
-        }
-
-        public Player getPlayer1() {
-            return player1;
-        }
-
-        public Player getPlayer2() {
-            return player2;
-        }
-
-        public Long getStartTime() {
-            return startTime;
-        }
-
-        public int getSneakCount() {
-            return sneakCount;
-        }
-
-        public int incrementSneakCount() {
-            return sneakCount++;
-        }
-    }
-
     public static final String MAX_TIME_JSON_KEY = "VillagerCreator.MaxTime";
     public static final String MAX_DISTANCE_JSON_KEY = "VillagerCreator.MaxDistance";
     public static final String SNEAK_COUNT_JSON_KEY = "VillagerCreator.SneakCount";
+
+    public static final String VILLAGER_META_KEY = "villagerCreator";
+    public static final String VILLAGER_META_VALUE = "%s+%s";
+    public static final String VILLAGER_NAME_FORMAT = "Child from %s and %s";
+
+    public static final int MAX_REMOVE_DISTANCE = 10;
 
     private final int maxTime;
     private final int maxDistance;
     private final int sneakCount;
     private final Map<UUID, PlayerSneakInfo> playerSneakMap;
 
-    public VillagerCreator() {
+    public VillagerCreatorManager() {
         this.playerSneakMap = new HashMap<>();
         maxTime = Manager.getInstance().getConfig().getInt(MAX_TIME_JSON_KEY);
         maxDistance = Manager.getInstance().getConfig().getInt(MAX_DISTANCE_JSON_KEY);
@@ -83,11 +53,23 @@ public class VillagerCreator implements Listener, ManagedPlugin
                 villager.setBaby();
                 villager.setCustomName(String.format(VILLAGER_NAME_FORMAT, playerSneakInfo.getPlayer1().getName(), playerSneakInfo.getPlayer2().getName()));
                 villager.setCustomNameVisible(true);
+                villager.setMetadata(VILLAGER_META_KEY, new FixedMetadataValue(Manager.getInstance(), String.format(VILLAGER_META_VALUE, playerSneakInfo.getPlayer1().getName(), playerSneakInfo.getPlayer2().getName())));
+                Bukkit.getScheduler().runTaskLater(Manager.getInstance(), () -> removeCustomFromVillager(villager), 25000); // >20min
             }
         } catch(Exception e) {
             Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
         }
         remove(playerSneakInfo.getPlayer1().getUniqueId(), playerSneakInfo.getPlayer2().getUniqueId());
+    }
+
+    public boolean removeCustomFromVillager(Villager villager) {
+        if(villager.hasMetadata(VILLAGER_META_KEY) && villager.isAdult() && villager.isValid()) {
+            villager.setCustomName("");
+            villager.setCustomNameVisible(false);
+            villager.removeMetadata(VILLAGER_META_KEY, Manager.getInstance());
+            return true;
+        }
+        return false;
     }
 
     public Player getOtherPlayer(Player player) {
@@ -153,13 +135,28 @@ public class VillagerCreator implements Listener, ManagedPlugin
 
     @Override
     public boolean onEnable() {
+        VillagerCreatorCommands vcc = new VillagerCreatorCommands(this);
         Manager.getInstance().getServer().getPluginManager().registerEvents(this, Manager.getInstance());
+        try {
+            Manager.getInstance().getCommand(VillagerCreatorCommands.CommandStrings.ROOT).setExecutor(vcc);
+            Manager.getInstance().getCommand(VillagerCreatorCommands.CommandStrings.ROOT).setTabCompleter(vcc);
+        } catch(Exception e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            onDisable();
+            return false;
+        }
         return true;
     }
 
     @Override
     public void onDisable() {
         HandlerList.unregisterAll(this);
+        try {
+            Manager.getInstance().getCommand(VillagerCreatorCommands.CommandStrings.ROOT).setExecutor(null);
+            Manager.getInstance().getCommand(VillagerCreatorCommands.CommandStrings.ROOT).setTabCompleter(null);
+        } catch(NullPointerException e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+        }
     }
 
     @Override
@@ -169,7 +166,7 @@ public class VillagerCreator implements Listener, ManagedPlugin
 
     @Override
     public ChatColor getMessageColor() {
-        return ManagedPlugin.DEFAULT_CHAT_COLOR;
+        return ChatColor.YELLOW;
     }
 
     @Override

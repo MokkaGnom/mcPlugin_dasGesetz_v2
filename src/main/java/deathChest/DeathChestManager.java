@@ -73,6 +73,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
     }
 
     public DeathChest createDeathCest(Player player, List<ItemStack> items) {
+        if(items == null || items.isEmpty()) return null;
         List<DeathChest> chests = Objects.requireNonNullElse(deathChests.get(player.getUniqueId()), new ArrayList<>());
         DeathChest chest = new DeathChest(player, items);
         chest.setTaskID(Bukkit.getScheduler().runTaskLater(
@@ -93,7 +94,10 @@ public class DeathChestManager implements Listener, ManagedPlugin
             if(cancelRemoveTask) {
                 Bukkit.getScheduler().cancelTask(chest.getTaskID());
             }
-            sendMessage(Bukkit.getPlayer(chest.getOwner()), String.format(COLLECTED_PLAYER_MESSAGE));
+            Player player = Bukkit.getPlayer(chest.getOwner());
+            if(player != null) {
+                sendMessage(player, String.format(COLLECTED_PLAYER_MESSAGE));
+            }
             Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(COLLECTED_SERVER_MESSAGE, chest.toString()));
             deathChests.get(chest.getOwner()).remove(chest);
             return true;
@@ -106,7 +110,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
     }
 
     public boolean isBlockDeathChest(Block block) {
-        return block.hasMetadata(DeathChest.METADATA_KEY);
+        return block != null && block.hasMetadata(DeathChest.METADATA_KEY);
     }
 
     public DeathChest getDeathChest(Block block) {

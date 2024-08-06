@@ -13,7 +13,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import other.Messages;
-import other.VillagerCreator;
+import villagerCreator.VillagerCreatorManager;
 import ping.PingManager;
 
 import java.util.HashMap;
@@ -80,7 +80,7 @@ public class Manager extends JavaPlugin
         this.plugins.put(new BlockLoggerManager(), true);
         this.plugins.put(new Messages(), true);
         this.plugins.put(new PingManager(), true);
-        this.plugins.put(new VillagerCreator(), true);
+        this.plugins.put(new VillagerCreatorManager(), true);
         this.plugins.put(new PrefixManager(), true);
 
         sendInfoMessage(MESSAGE_PREFIX,"Enable plugins...");

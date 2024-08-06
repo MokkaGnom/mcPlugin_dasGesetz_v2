@@ -9,20 +9,32 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import utility.ErrorMessage;
 
 import java.io.File;
 import java.util.*;
 
-import static home.HomeConstants.*;
-
 public class HomeManager implements ManagedPlugin, Saveable
 {
+    public interface HomeConstants
+    {
+        String ERROR_HOME_EXISTS = "Home \"%s\" already exists";
+        String ERROR_HOME_NOT_FOUND = "Home \"%s\" not found";
+        String ERROR_MAX_HOME_COUNT = "Reached maximum amount of homes";
+        String NO_HOMES_FOUND = "No Homes found";
+
+        String HOME_ADDED = "Home \"%s\" added";
+        String HOME_REMOVED = "Home \"%s\" removed";
+        String HOME_TELEPORTED = "Teleported to home \"%s\"";
+
+        String HOMES_SAVED = "Homes saved! (P:%d H:%d)";
+        String HOMES_LOADED = "Homes loaded! (P:%d H:%d)";
+    }
+
     private static final String MAX_HOMES_JSON_KEY = "Homes.MaxHomes";
-    private static final String MAX_CREATE_DISTANCE_JSON_KEY = "Homes.MaxCreateDistance";
 
     public final int MAX_HOMES = Manager.getInstance().getConfig().getInt(MAX_HOMES_JSON_KEY);
-    public final int MAX_BLOCK_DISTANCE = Manager.getInstance().getConfig().getInt(MAX_CREATE_DISTANCE_JSON_KEY);
     private final File SAVE_FILE = new File(Manager.getInstance().getDataFolder(), getName() + ".yml");
     private final Map<UUID, Map<String, Location>> homes = new HashMap<>();
     private final FileConfiguration saveConfigFile = YamlConfiguration.loadConfiguration(SAVE_FILE);
@@ -51,47 +63,63 @@ public class HomeManager implements ManagedPlugin, Saveable
     }
 
     public ErrorMessage addHome(UUID playerUUID, String homeName, Location location) {
-        if(!homes.containsKey(playerUUID)) {
-            homes.put(playerUUID, new HashMap<>());
+        Map<String, Location> homeMap = getHomes(playerUUID);
+        if(getHomeLocation(playerUUID, homeName) != null) {
+            return new ErrorMessage(String.format(HomeConstants.ERROR_HOME_EXISTS, homeName));
         }
-        Map<String, Location> homeMap = homes.get(playerUUID);
-        if(homeMap.containsKey(homeName)) {
-            return new ErrorMessage(String.format(ERROR_HOME_EXISTS, homeName));
-        }
-        else if(homeMap.size() >= MAX_HOMES) {
-            return new ErrorMessage(ERROR_MAX_HOME_COUNT);
+        else if(isMaxHomesReached(playerUUID)) {
+            return new ErrorMessage(HomeConstants.ERROR_MAX_HOME_COUNT);
         }
         else {
-            homeMap.put(homeName, getTPLocation(location));
+            homeMap.put(homeName.toLowerCase(), getTPLocation(location));
             return ErrorMessage.NO_ERROR;
         }
     }
 
     public ErrorMessage removeHome(UUID playerUUID, String homeName) {
-        Map<String, Location> homeMap = homes.get(playerUUID);
-        if(homeMap != null) {
-            homeMap.remove(homeName);
+        Map<String, Location> homeMap = getHomes(playerUUID);
+        if(!homeMap.isEmpty()) {
+            homeMap.remove(homeName.toLowerCase());
             return ErrorMessage.NO_ERROR;
         }
         else {
-            return new ErrorMessage(String.format(ERROR_HOME_NOT_FOUND, homeName));
+            return new ErrorMessage(String.format(HomeConstants.ERROR_HOME_NOT_FOUND, homeName));
         }
     }
 
     public List<String> getAllHomeNames(UUID playerUUID) {
-        Map<String, Location> playerHomes = homes.get(playerUUID);
-        return (playerHomes != null ? new ArrayList<>(playerHomes.keySet()) : ErrorMessage.COMMAND_NO_OPTION_AVAILABLE);
+        Map<String, Location> playerHomes = getHomes(playerUUID);
+        return (playerHomes.isEmpty() ? List.of(HomeConstants.NO_HOMES_FOUND) : new ArrayList<>(playerHomes.keySet()));
     }
 
     public ErrorMessage teleportToHome(UUID playerUUID, String homeName) {
-        Map<String, Location> homeMap = homes.get(playerUUID);
-        if(homeMap != null && homeMap.containsKey(homeName)) {
-            Manager.getInstance().getServer().getPlayer(playerUUID).teleport(homeMap.get(homeName));
+        Location location = getHomeLocation(playerUUID, homeName);
+        Player player = Manager.getInstance().getServer().getPlayer(playerUUID);
+        if(location != null && player != null) {
+            player.teleport(location);
             return ErrorMessage.NO_ERROR;
         }
         else {
-            return new ErrorMessage(String.format(ERROR_HOME_NOT_FOUND, homeName));
+            return new ErrorMessage(String.format(HomeConstants.ERROR_HOME_NOT_FOUND, homeName));
         }
+    }
+
+    public boolean isMaxHomesReached(UUID playerUUID) {
+        return getHomes(playerUUID).size() >= MAX_HOMES;
+    }
+
+    public Location getHomeLocation(UUID playerUUID, String homeName) {
+        Map<String, Location> playerHomes = getHomes(playerUUID);
+        for(Map.Entry<String, Location> entry : playerHomes.entrySet()) {
+            if(entry.getKey().equalsIgnoreCase(homeName)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    public Map<String, Location> getHomes(UUID playerUUID) {
+        return homes.computeIfAbsent(playerUUID, k -> new HashMap<>());
     }
 
     @Override
@@ -109,7 +137,7 @@ public class HomeManager implements ManagedPlugin, Saveable
         }
         try {
             saveConfigFile.save(SAVE_FILE);
-            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(HOMES_SAVED, homes.keySet().size(), homes.entrySet().size()));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(HomeConstants.HOMES_SAVED, homes.keySet().size(), homes.entrySet().size()));
             return true;
         } catch(Exception e) {
             Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
@@ -135,7 +163,7 @@ public class HomeManager implements ManagedPlugin, Saveable
             }
             homes.put(UUID.fromString(uuid), homeMap);
         }
-        Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(HOMES_LOADED, homes.keySet().size(), homes.entrySet().size()));
+        Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(HomeConstants.HOMES_LOADED, homes.keySet().size(), homes.entrySet().size()));
         return true;
     }
 
@@ -184,7 +212,5 @@ public class HomeManager implements ManagedPlugin, Saveable
     public void createDefaultConfig(FileConfiguration config) {
         config.addDefault(MAX_HOMES_JSON_KEY, 5);
         config.setInlineComments(MAX_HOMES_JSON_KEY, List.of("Wie viele Homes ein Spieler maximal haben darf"));
-        config.addDefault(MAX_CREATE_DISTANCE_JSON_KEY, 10);
-        config.setInlineComments(MAX_CREATE_DISTANCE_JSON_KEY, List.of("Wie weit ein Spieler maximal von dem Block zum erstellen entfernt sein darf"));
     }
 }

@@ -1,6 +1,5 @@
 package home;
 
-import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
@@ -38,20 +37,13 @@ public class HomeCommands implements TabExecutor
             }
             else if(args.length == 2) {
                 if(args[0].equalsIgnoreCase(CommandStrings.ADD)) {
-                    Block targetBlock = player.getTargetBlockExact(homeManager.MAX_BLOCK_DISTANCE);
-                    if(targetBlock != null) {
-                        ErrorMessage message = homeManager.addHome(player.getUniqueId(), args[1], targetBlock.getLocation());
-                        if(message != ErrorMessage.NO_ERROR) {
-                            homeManager.sendMessage(sender, message.message());
-                            return false;
-                        }
-                        homeManager.sendMessage(sender, String.format(HomeConstants.HOME_ADDED, args[1]));
-                        return true;
-                    }
-                    else {
-                        homeManager.sendMessage(sender, HomeConstants.ERROR_INVALID_TARGET_BLOCK);
+                    ErrorMessage message = homeManager.addHome(player.getUniqueId(), args[1], player.getLocation().getBlock().getLocation());
+                    if(message != ErrorMessage.NO_ERROR) {
+                        homeManager.sendMessage(sender, message.message());
                         return false;
                     }
+                    homeManager.sendMessage(sender, String.format(HomeManager.HomeConstants.HOME_ADDED, args[1]));
+                    return true;
                 }
                 else if(args[0].equalsIgnoreCase(CommandStrings.REMOVE)) {
                     ErrorMessage message = homeManager.removeHome(player.getUniqueId(), args[1]);
@@ -59,7 +51,7 @@ public class HomeCommands implements TabExecutor
                         homeManager.sendMessage(sender, message.message());
                         return false;
                     }
-                    homeManager.sendMessage(sender, String.format(HomeConstants.HOME_REMOVED, args[1]));
+                    homeManager.sendMessage(sender, String.format(HomeManager.HomeConstants.HOME_REMOVED, args[1]));
                     return true;
                 }
                 else if(args[0].equalsIgnoreCase(CommandStrings.TP)) {
@@ -68,7 +60,7 @@ public class HomeCommands implements TabExecutor
                         homeManager.sendMessage(sender, message.message());
                         return false;
                     }
-                    homeManager.sendMessage(sender, String.format(HomeConstants.HOME_TELEPORTED, args[1]));
+                    homeManager.sendMessage(sender, String.format(HomeManager.HomeConstants.HOME_TELEPORTED, args[1]));
                     return true;
                 }
             }

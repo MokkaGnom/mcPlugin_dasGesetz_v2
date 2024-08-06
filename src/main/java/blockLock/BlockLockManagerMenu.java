@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFactory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -132,22 +133,22 @@ public class BlockLockManagerMenu implements Listener
     private boolean updateFriendsInvItems() {
         try {
             friendsItems = new ArrayList<>();
-
-            OfflinePlayer p = null;
-            SkullMeta skull = null;
-            ItemStack is = null;
             ArrayList<String> lore = new ArrayList<>();
             lore.add(ChatColor.RED + "Click to remove local friend");
-            List<String> allFriendsList = blManager.getFriends(blockLock.getOwner(), blockLock.getBlock()).stream().map(UUID::toString).toList();
+            List<UUID> allFriendsList = new ArrayList<>(blockLock.getLocalFriends());
             for(int i = 0; i < BlockLockManager.MAX_LOCAL_FRIENDS && i < allFriendsList.size(); i++) {
-                p = Bukkit.getOfflinePlayer(allFriendsList.get(i));
-                is = new ItemStack(Material.PLAYER_HEAD, 1);
-                skull = (SkullMeta) is.getItemMeta();
-                skull.setDisplayName(p.getName());
-                skull.setOwningPlayer(p);
-                skull.setLore(lore);
-                is.setItemMeta(skull);
-                friendsItems.add(is);
+                OfflinePlayer p = Bukkit.getOfflinePlayer(allFriendsList.get(i));
+                ItemStack is = new ItemStack(Material.PLAYER_HEAD, 1);
+                if(!is.hasItemMeta()) {
+                    is.setItemMeta(Bukkit.getServer().getItemFactory().getItemMeta(Material.PLAYER_HEAD));
+                }
+                if(is.getItemMeta() instanceof SkullMeta skull) {
+                    skull.setDisplayName(p.getName());
+                    skull.setOwningPlayer(p);
+                    skull.setLore(lore);
+                    is.setItemMeta(skull);
+                    friendsItems.add(is);
+                }
             }
 
             for(int i = 0; i < friendsItems.size(); i++) {
