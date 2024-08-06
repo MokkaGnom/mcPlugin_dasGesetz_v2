@@ -30,6 +30,12 @@ public interface ManagedPlugin
 
     /*-------------------------- Message --------------------------*/
 
+    default void sendMessage(CommandSender sender, List<String> messages) {
+        for(String message : messages) {
+            sendMessage(sender, message);
+        }
+    }
+
     default void sendMessage(CommandSender sender, String message) {
         sender.sendMessage(getMessageColorPrefix() + message);
     }

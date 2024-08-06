@@ -18,8 +18,7 @@ public class HomeCommands implements TabExecutor
         String REMOVE = "remove";
         String TP = "tp";
 
-        List<String> FIRST_ARGUMENT = List.of(ROOT);
-        List<String> SECOND_ARGUMENT = List.of(LIST, ADD, REMOVE, TP);
+        List<String> FIRST_ARGUMENT = List.of(LIST, ADD, REMOVE, TP);
     }
 
     private final HomeManager homeManager;
@@ -32,35 +31,24 @@ public class HomeCommands implements TabExecutor
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(sender instanceof Player player) {
             if(args.length == 1 && args[0].equalsIgnoreCase(CommandStrings.LIST)) {
-                homeManager.sendMessage(sender, homeManager.getAllHomeNames(player.getUniqueId()));
+                List<String> homeNames = homeManager.getAllHomeNames(player.getUniqueId());
+                homeManager.sendMessage(sender, homeNames.isEmpty() ? List.of(HomeManager.HomeConstants.NO_HOMES_FOUND) : homeNames);
                 return true;
             }
             else if(args.length == 2) {
                 if(args[0].equalsIgnoreCase(CommandStrings.ADD)) {
                     ErrorMessage message = homeManager.addHome(player.getUniqueId(), args[1], player.getLocation().getBlock().getLocation());
-                    if(message != ErrorMessage.NO_ERROR) {
-                        homeManager.sendMessage(sender, message.message());
-                        return false;
-                    }
-                    homeManager.sendMessage(sender, String.format(HomeManager.HomeConstants.HOME_ADDED, args[1]));
+                    homeManager.sendMessage(sender, message != ErrorMessage.NO_ERROR ? message.message() : String.format(HomeManager.HomeConstants.HOME_ADDED, args[1]));
                     return true;
                 }
                 else if(args[0].equalsIgnoreCase(CommandStrings.REMOVE)) {
                     ErrorMessage message = homeManager.removeHome(player.getUniqueId(), args[1]);
-                    if(message != ErrorMessage.NO_ERROR) {
-                        homeManager.sendMessage(sender, message.message());
-                        return false;
-                    }
-                    homeManager.sendMessage(sender, String.format(HomeManager.HomeConstants.HOME_REMOVED, args[1]));
+                    homeManager.sendMessage(sender, message != ErrorMessage.NO_ERROR ? message.message() : String.format(HomeManager.HomeConstants.HOME_REMOVED, args[1]));
                     return true;
                 }
                 else if(args[0].equalsIgnoreCase(CommandStrings.TP)) {
                     ErrorMessage message = homeManager.teleportToHome(player.getUniqueId(), args[1]);
-                    if(message != ErrorMessage.NO_ERROR) {
-                        homeManager.sendMessage(sender, message.message());
-                        return false;
-                    }
-                    homeManager.sendMessage(sender, String.format(HomeManager.HomeConstants.HOME_TELEPORTED, args[1]));
+                    homeManager.sendMessage(sender, message != ErrorMessage.NO_ERROR ? message.message() : String.format(HomeManager.HomeConstants.HOME_TELEPORTED, args[1]));
                     return true;
                 }
             }
@@ -76,7 +64,7 @@ public class HomeCommands implements TabExecutor
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         if(args.length == 1) {
-            return CommandStrings.SECOND_ARGUMENT;
+            return CommandStrings.FIRST_ARGUMENT;
         }
         else if(args.length == 2) {
             if(sender instanceof Player player) {

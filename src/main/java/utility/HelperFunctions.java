@@ -14,22 +14,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public final class HelperFunctions
+public interface HelperFunctions
 {
-    public static final Map<BlockFace, BlockFace> BLOCK_FACE_RIGHT = Map.of(
+    Map<BlockFace, BlockFace> BLOCK_FACE_RIGHT = Map.of(
             BlockFace.NORTH, BlockFace.EAST,
             BlockFace.EAST, BlockFace.SOUTH,
             BlockFace.SOUTH, BlockFace.WEST,
             BlockFace.WEST, BlockFace.NORTH
     );
-    public static final Map<BlockFace, BlockFace> BLOCK_FACE_LEFT = Map.of(
+    Map<BlockFace, BlockFace> BLOCK_FACE_LEFT = Map.of(
             BlockFace.NORTH, BlockFace.WEST,
             BlockFace.WEST, BlockFace.SOUTH,
             BlockFace.SOUTH, BlockFace.EAST,
             BlockFace.EAST, BlockFace.NORTH
     );
 
-    public static final int[][] OFFSETS = {
+    int[][] OFFSETS = {
             {0, 1, 0},
             {0, -1, 0},
             {1, 0, 0},
@@ -38,7 +38,7 @@ public final class HelperFunctions
             {0, 0, -1}
     };
 
-    public static List<Block> getRelativeBlocks(Block firstBlock, Material material) {
+    static List<Block> getRelativeBlocks(Block firstBlock, Material material) {
         List<Block> blocks = new ArrayList<Block>();
         for(int[] offset : OFFSETS) {
             Block relativeBlock = firstBlock.getRelative(offset[0], offset[1], offset[2]);
@@ -49,11 +49,11 @@ public final class HelperFunctions
         return blocks;
     }
 
-    public static Block getTargetBlock(LivingEntity entity) {
+    static Block getTargetBlock(LivingEntity entity) {
         return entity.getTargetBlock(null, 255);
     }
 
-    public static Entity getTargetEntity(Location startLocation, Vector direction, int maxDistance) {
+    static Entity getTargetEntity(Location startLocation, Vector direction, int maxDistance) {
         if(startLocation == null || startLocation.getWorld() == null || direction == null || maxDistance <= 0)
             return null;
         RayTraceResult result = startLocation.getWorld().rayTraceEntities(startLocation, direction, maxDistance);
@@ -63,7 +63,7 @@ public final class HelperFunctions
         return null;
     }
 
-    public static boolean isArgumentTrue(String argument) {
+    static boolean isArgumentTrue(String argument) {
         return !(ManagedPlugin.ENABLE_STRINGS.stream().filter(s -> s.equalsIgnoreCase(argument)).toList().isEmpty());
     }
 }

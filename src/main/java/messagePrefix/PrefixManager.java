@@ -63,12 +63,6 @@ public class PrefixManager implements Listener, ManagedPlugin, Saveable
         }
     }
 
-    public void sendMessage(CommandSender sender, List<String> messages) {
-        for(String message : messages) {
-            sendMessage(sender, message);
-        }
-    }
-
     public Prefix getPrefix(Player player) {
         if(player.hasMetadata(META_DATA_KEY)) {
             return (Prefix) player.getMetadata(META_DATA_KEY).getFirst().value();

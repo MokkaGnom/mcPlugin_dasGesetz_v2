@@ -48,39 +48,38 @@ public class HomeManager implements ManagedPlugin, Saveable
      * @param loc Der ursprungs Ort
      * @return Der neue Ort
      */
-    private Location getTPLocation(Location loc) {
+    private static Location getTPLocation(Location loc) {
         return loc.add(
                 loc.getX() % 1 == 0.0d ? 0.5d : 0.0d,
-                1.0d,
+                0.0d,
                 loc.getZ() % 1 == 0.0d ? 0.5d : 0.0d
         );
     }
 
-    public void sendMessage(CommandSender sender, List<String> messages) {
-        for(String message : messages) {
-            sendMessage(sender, message);
-        }
-    }
-
     public ErrorMessage addHome(UUID playerUUID, String homeName, Location location) {
-        Map<String, Location> homeMap = getHomes(playerUUID);
-        if(getHomeLocation(playerUUID, homeName) != null) {
+        if(getHome(playerUUID, homeName) != null) {
             return new ErrorMessage(String.format(HomeConstants.ERROR_HOME_EXISTS, homeName));
         }
         else if(isMaxHomesReached(playerUUID)) {
             return new ErrorMessage(HomeConstants.ERROR_MAX_HOME_COUNT);
         }
         else {
-            homeMap.put(homeName.toLowerCase(), getTPLocation(location));
+            getAllHomes(playerUUID).put(homeName, getTPLocation(location));
             return ErrorMessage.NO_ERROR;
         }
     }
 
     public ErrorMessage removeHome(UUID playerUUID, String homeName) {
-        Map<String, Location> homeMap = getHomes(playerUUID);
-        if(!homeMap.isEmpty()) {
-            homeMap.remove(homeName.toLowerCase());
-            return ErrorMessage.NO_ERROR;
+        Map.Entry<String, Location> home = getHome(playerUUID, homeName);
+        if(home != null) {
+            if(getAllHomes(playerUUID).remove(home.getKey()) != null) {
+                return ErrorMessage.NO_ERROR;
+            }
+            else {
+                Manager.getInstance().sendWarningMessage(getMessagePrefix(),
+                        "Home-Remove: Could not remove existing home: " + playerUUID + ": " + home.getKey());
+                return new ErrorMessage("Home couldn't be removed");
+            }
         }
         else {
             return new ErrorMessage(String.format(HomeConstants.ERROR_HOME_NOT_FOUND, homeName));
@@ -88,15 +87,15 @@ public class HomeManager implements ManagedPlugin, Saveable
     }
 
     public List<String> getAllHomeNames(UUID playerUUID) {
-        Map<String, Location> playerHomes = getHomes(playerUUID);
-        return (playerHomes.isEmpty() ? List.of(HomeConstants.NO_HOMES_FOUND) : new ArrayList<>(playerHomes.keySet()));
+        Map<String, Location> playerHomes = getAllHomes(playerUUID);
+        return new ArrayList<>(playerHomes.keySet());
     }
 
     public ErrorMessage teleportToHome(UUID playerUUID, String homeName) {
-        Location location = getHomeLocation(playerUUID, homeName);
+        Map.Entry<String, Location> entry = getHome(playerUUID, homeName);
         Player player = Manager.getInstance().getServer().getPlayer(playerUUID);
-        if(location != null && player != null) {
-            player.teleport(location);
+        if(entry != null && entry.getValue() != null && player != null) {
+            player.teleport(entry.getValue());
             return ErrorMessage.NO_ERROR;
         }
         else {
@@ -105,20 +104,20 @@ public class HomeManager implements ManagedPlugin, Saveable
     }
 
     public boolean isMaxHomesReached(UUID playerUUID) {
-        return getHomes(playerUUID).size() >= MAX_HOMES;
+        return getAllHomes(playerUUID).size() >= MAX_HOMES;
     }
 
-    public Location getHomeLocation(UUID playerUUID, String homeName) {
-        Map<String, Location> playerHomes = getHomes(playerUUID);
+    public Map.Entry<String, Location> getHome(UUID playerUUID, String homeName) {
+        Map<String, Location> playerHomes = getAllHomes(playerUUID);
         for(Map.Entry<String, Location> entry : playerHomes.entrySet()) {
             if(entry.getKey().equalsIgnoreCase(homeName)) {
-                return entry.getValue();
+                return entry;
             }
         }
         return null;
     }
 
-    public Map<String, Location> getHomes(UUID playerUUID) {
+    public Map<String, Location> getAllHomes(UUID playerUUID) {
         return homes.computeIfAbsent(playerUUID, k -> new HashMap<>());
     }
 

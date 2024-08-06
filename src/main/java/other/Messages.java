@@ -61,7 +61,7 @@ public class Messages implements Listener, ManagedPlugin
 
     @Override
     public void createDefaultConfig(FileConfiguration config) {
-        config.addDefault(MESSAGE_JSON_KEY, "Check out the plugin: https://github.com/MokkaGnom/mcPlugin_dasGesetz_v2");
+        config.addDefault(MESSAGE_JSON_KEY, "Check out the plugin: https://dasGesetz.mokkagnom.de");
         config.setInlineComments(MESSAGE_JSON_KEY, List.of("Die Nachricht, welche einem Spieler angezeigt werden soll, wenn er joined"));
     }
 }

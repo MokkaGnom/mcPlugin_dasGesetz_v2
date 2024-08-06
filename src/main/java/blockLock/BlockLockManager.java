@@ -91,12 +91,6 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         this.globalFriends = new HashMap<>();
     }
 
-    public void sendMessage(CommandSender sender, List<String> messages) {
-        for(String message : messages) {
-            sendMessage(sender, message);
-        }
-    }
-
     @EventHandler
     public void onWorldSave(WorldSaveEvent event) {
         if(event.getWorld().getName().equals(Bukkit.getWorlds().getFirst().getName()))

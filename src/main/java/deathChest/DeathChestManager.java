@@ -65,13 +65,6 @@ public class DeathChestManager implements Listener, ManagedPlugin
         deathChests = new HashMap<>();
     }
 
-
-    public void sendMessage(CommandSender receiver, List<String> messages) {
-        for(String message : messages) {
-            sendMessage(receiver, message);
-        }
-    }
-
     public DeathChest createDeathCest(Player player, List<ItemStack> items) {
         if(items == null || items.isEmpty()) return null;
         List<DeathChest> chests = Objects.requireNonNullElse(deathChests.get(player.getUniqueId()), new ArrayList<>());
