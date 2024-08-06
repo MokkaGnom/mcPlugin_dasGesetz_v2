@@ -1,5 +1,6 @@
 package manager;
 
+import manager.performance.PerformanceTracker;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -19,8 +20,9 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
         String ROOT = "dgManager";
         String MANAGE = "Manage";
         String PERMISSION = "Permission";
+        String PERFORMANCE = "Performance";
 
-        List<String> FIRST_ARGUMENT = List.of(MANAGE, PERMISSION);
+        List<String> FIRST_ARGUMENT = List.of(MANAGE, PERMISSION, PERFORMANCE);
         List<String> SECOND_ARGUMENT = null;
         List<String> THIRD_ARGUMENT = Stream.concat(DISABLE_STRINGS.stream(), ENABLE_STRINGS.stream()).collect(Collectors.toList());
     }
@@ -35,7 +37,17 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
             return false;
         }
 
-        if(args.length == 3) {
+        if(args.length == 1) {
+            if(args[0].equals(CommandStrings.PERFORMANCE)) {
+                sendMessage(sender, PerformanceTracker.INSTANCE.getObjectCountAsStringOutput(PerformanceTracker.INSTANCE.getPerformancePlugins(Manager.getInstance().getPlugins().keySet())));
+                return true;
+            }
+            else {
+                sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
+                return false;
+            }
+        }
+        else if(args.length == 3) {
             if(args[0].equalsIgnoreCase(CommandStrings.MANAGE)) {
                 ManagedPlugin plugin = Manager.getInstance().getPlugins().keySet().stream()
                         .filter(p -> p.getName().equalsIgnoreCase(args[1]))
@@ -44,19 +56,16 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
                     if(HelperFunctions.isArgumentTrue(args[2])) {
                         Manager.getInstance().enablePlugin(plugin);
                         sendMessage(sender, String.format("Plugin: \"%s\" wurde aktiviert", plugin.getName()));
-
                     }
                     else {
                         Manager.getInstance().disablePlugin(plugin);
                         sendMessage(sender, String.format("Plugin: \"%s\" wurde deaktiviert", plugin.getName()));
                     }
-                    return true;
                 }
                 else {
                     sendMessage(sender, "Unknown Plugin!");
-                    return true;
                 }
-
+                return true;
             }
             else if(args[0].equalsIgnoreCase(CommandStrings.PERMISSION)) {
                 String permission = Manager.getInstance().getPermissions().stream()
@@ -71,12 +80,11 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
                         Manager.getInstance().removePermissionFromUser(player, permission);
                         sendMessage(sender, String.format("Permission \"%s\" removed from \"%s\"", permission, player.getName()));
                     }
-                    return true;
                 }
                 else {
                     sendMessage(sender, "Unknown Permission!");
-                    return true;
                 }
+                return true;
             }
             else {
                 sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());

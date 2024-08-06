@@ -173,4 +173,9 @@ public class VillagerCreatorManager implements Listener, ManagedPlugin
     public List<String> getPermissions() {
         return List.of("dg.createVillagerPermission");
     }
+
+    @Override
+    public int getObjectCount() {
+        return playerSneakMap.size();
+    }
 }

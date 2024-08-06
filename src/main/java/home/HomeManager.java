@@ -5,7 +5,6 @@ import manager.Manager;
 import manager.Saveable;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -17,6 +16,11 @@ import java.util.*;
 
 public class HomeManager implements ManagedPlugin, Saveable
 {
+    @Override
+    public int getObjectCount() {
+        return 1 + homes.keySet().size() + homes.values().size();
+    }
+
     public interface HomeConstants
     {
         String ERROR_HOME_EXISTS = "Home \"%s\" already exists";

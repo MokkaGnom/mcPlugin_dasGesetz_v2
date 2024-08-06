@@ -1,5 +1,6 @@
 package manager;
 
+import manager.performance.PerformanceTracked;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -7,7 +8,7 @@ import org.bukkit.permissions.Permissible;
 
 import java.util.List;
 
-public interface ManagedPlugin
+public interface ManagedPlugin extends PerformanceTracked
 {
     List<String> DISABLE_STRINGS = List.of("0", "disable", "false");
     List<String> ENABLE_STRINGS = List.of("1", "enable", "true");

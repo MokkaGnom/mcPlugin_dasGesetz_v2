@@ -45,7 +45,7 @@ public class PrefixManager implements Listener, ManagedPlugin, Saveable
     }
 
     @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event){
+    public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         Prefix prefix = getOfflinePrefix(player);
         if(prefix != null) {
@@ -147,7 +147,7 @@ public class PrefixManager implements Listener, ManagedPlugin, Saveable
         return prefixes;
     }
 
-    public List<Prefix> getPrefixes(Player player){
+    public List<Prefix> getPrefixes(Player player) {
         return hasAdminPermission(player) ? getPrefixes() : prefixes.stream().filter(prefix -> !prefix.isAdminPrefix()).toList();
     }
 
@@ -167,7 +167,7 @@ public class PrefixManager implements Listener, ManagedPlugin, Saveable
     public boolean saveToFile() {
         // Save Prefixes
         for(Prefix prefix : prefixes) {
-            if(prefix != null){
+            if(prefix != null) {
                 prefix.save(saveFile.createSection(prefix.prefix()));
             }
         }
@@ -247,5 +247,10 @@ public class PrefixManager implements Listener, ManagedPlugin, Saveable
     @Override
     public List<String> getPermissions() {
         return List.of("dg.prefixUsePermission", "dg.prefixAdminPermission");
+    }
+
+    @Override
+    public int getObjectCount() {
+        return 2 + prefixes.size() + offlinePrefixes.size();
     }
 }

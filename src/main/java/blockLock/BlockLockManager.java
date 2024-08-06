@@ -61,6 +61,15 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
 
     public static final int MAX_LOCAL_FRIENDS = 54;
 
+    @Override
+    public int getObjectCount() {
+        return 4 +
+                blockLocks.keySet().size() +
+                blockLocks.values().size() +
+                globalFriends.keySet().size() +
+                globalFriends.values().size();
+    }
+
     public interface META_DATA
     {
         interface BLOCK
@@ -182,7 +191,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
     @Override
     public boolean loadFromFile() {
         boolean loaded = true;
-        
+
         // Load BlockLocks
         try {
             saveConfigFile.load(SAVE_FILE);
