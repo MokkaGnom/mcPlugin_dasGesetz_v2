@@ -3,8 +3,8 @@ package messagePrefix;
 import manager.ManagedPlugin;
 import manager.Manager;
 import manager.Saveable;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -23,15 +23,23 @@ import java.util.*;
 public class PrefixManager implements Listener, ManagedPlugin, Saveable
 {
     private final File SAVE_FILE = new File(Manager.getInstance().getDataFolder(), getName() + ".yml");
+    private final File SAVE_APPLIED_PREFIX_FILE = new File(Manager.getInstance().getDataFolder(), getName() + "_applied.yml");
     public static final String META_DATA_KEY = "prefix";
     public static final int MAX_PREFIX_LENGTH = 20;
+    public static final Set<ChatColor> AVAILABLE_COLORS = Set.of(ChatColor.WHITE, ChatColor.BLACK,
+            ChatColor.AQUA, ChatColor.DARK_AQUA, ChatColor.BLUE, ChatColor.DARK_BLUE,
+            ChatColor.GREEN, ChatColor.DARK_GREEN, ChatColor.RED, ChatColor.DARK_RED,
+            ChatColor.LIGHT_PURPLE, ChatColor.DARK_PURPLE, ChatColor.GRAY, ChatColor.DARK_GRAY,
+            ChatColor.YELLOW, ChatColor.GOLD);
 
     private final FileConfiguration saveFile;
+    private final FileConfiguration saveAppliedFile;
     private final List<Prefix> prefixes;
     private final Map<UUID, Prefix> offlinePrefixes;
 
     public PrefixManager() {
         this.saveFile = YamlConfiguration.loadConfiguration(SAVE_FILE);
+        this.saveAppliedFile = YamlConfiguration.loadConfiguration(SAVE_APPLIED_PREFIX_FILE);
         this.prefixes = new ArrayList<>();
         this.offlinePrefixes = new HashMap<>();
     }
@@ -163,47 +171,91 @@ public class PrefixManager implements Listener, ManagedPlugin, Saveable
         return String.format(prefix.toString(), "Name", "Nachricht");
     }
 
+    public Map<UUID, Prefix> getAllAppliedPrefixes() {
+        Map<UUID, Prefix> appliedPrefixes = new HashMap<>(this.offlinePrefixes);
+        for(Player player : Bukkit.getServer().getOnlinePlayers()) {
+            Prefix prefix = getPrefix(player);
+            if(prefix != null && !appliedPrefixes.containsKey(player.getUniqueId())) {
+                appliedPrefixes.put(player.getUniqueId(), prefix);
+            }
+        }
+        return appliedPrefixes;
+    }
+
     @Override
     public boolean saveToFile() {
         // Save Prefixes
+        boolean prefixesSaved;
         for(Prefix prefix : prefixes) {
             if(prefix != null) {
                 prefix.save(saveFile.createSection(prefix.prefix()));
             }
         }
-
         try {
             saveFile.save(SAVE_FILE);
             Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("Saved %s prefixes", prefixes.size()));
-            return true;
+            prefixesSaved = true;
         } catch(Exception e) {
             Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
-            return false;
+            prefixesSaved = false;
         }
+
+        // Save applied Prefixes
+        boolean appliedPrefixesSaved;
+        Map<UUID, Prefix> allAppliedPrefixes = getAllAppliedPrefixes();
+        for(Map.Entry<UUID, Prefix> entry : allAppliedPrefixes.entrySet()) {
+            saveAppliedFile.set(entry.getKey().toString(), entry.getValue().prefix());
+        }
+        try {
+            saveAppliedFile.save(SAVE_APPLIED_PREFIX_FILE);
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("Saved %s prefixes for %s players", allAppliedPrefixes.values().size(), allAppliedPrefixes.keySet().size()));
+            appliedPrefixesSaved = true;
+        } catch(Exception e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            appliedPrefixesSaved = false;
+        }
+
+        return prefixesSaved && appliedPrefixesSaved;
     }
 
     @Override
     public boolean loadFromFile() {
+        boolean prefixesLoaded;
         try {
             saveFile.load(SAVE_FILE);
+            ConfigurationSection section = saveFile.getConfigurationSection("");
+            for(String prefixName : section.getKeys(false)) {
+                Prefix prefix = Prefix.load(section.getConfigurationSection(prefixName));
+                if(prefix != null) {
+                    prefixes.add(prefix);
+                }
+            }
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("Loaded %s prefixes", prefixes.size()));
+            prefixesLoaded = true;
         } catch(Exception e) {
             Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
-            return false;
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("Could not load prefixes from %s", SAVE_FILE.getName()));
+            prefixesLoaded = false;
         }
-
-        ConfigurationSection section = saveFile.getConfigurationSection("");
-        for(String prefixName : section.getKeys(false)) {
-            Prefix prefix = Prefix.load(section.getConfigurationSection(prefixName));
-            if(prefix != null) {
-                prefixes.add(prefix);
-            }
-        }
-
         if(prefixes.isEmpty()) {
             prefixes.add(new Prefix("Admin", ChatColor.RED, ChatColor.GOLD, true));
         }
-        Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("Loaded %s prefixes", prefixes.size()));
-        return true;
+
+        boolean appliedPrefixesLoaded;
+        try {
+            saveAppliedFile.load(SAVE_APPLIED_PREFIX_FILE);
+            for(Map.Entry<String, Object> entry : saveAppliedFile.getValues(false).entrySet()) {
+                if(entry.getValue() instanceof String prefixName && getPrefix(prefixName) instanceof Prefix prefix) {
+                    offlinePrefixes.put(UUID.fromString(entry.getKey()), prefix);
+                }
+            }
+            appliedPrefixesLoaded = true;
+        } catch(Exception e) {
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            appliedPrefixesLoaded = false;
+        }
+
+        return prefixesLoaded && appliedPrefixesLoaded;
     }
 
     @Override

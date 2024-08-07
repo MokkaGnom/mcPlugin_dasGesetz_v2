@@ -147,12 +147,12 @@ public class PrefixCommands implements TabExecutor
                 return null;
             }
             if(args[0].equalsIgnoreCase(CommandStrings.CREATE)) {
-                return Arrays.stream(ChatColor.values()).map(ChatColor::name).toList();
+                return PrefixManager.AVAILABLE_COLORS.stream().map(ChatColor::name).toList();
             }
         }
         else if(args.length == 4) {
             if(args[0].equalsIgnoreCase(CommandStrings.CREATE)) {
-                return Arrays.stream(ChatColor.values()).map(ChatColor::name).toList();
+                return PrefixManager.AVAILABLE_COLORS.stream().map(ChatColor::name).toList();
             }
         }
         else if(args.length == 5) {
