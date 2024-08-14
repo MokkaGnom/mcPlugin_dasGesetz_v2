@@ -13,4 +13,5 @@ public record ErrorMessage(String message)
     public static final ErrorMessage UNKNOWN_ARGUMENT = new ErrorMessage("Unknown Argument!");
     public static final ErrorMessage NO_PERMISSION = new ErrorMessage("No Permission!");
     public static final ErrorMessage PLAYER_NOT_FOUND = new ErrorMessage("Player not found!");
+    public static final ErrorMessage UNIVERSAL_ERROR = new ErrorMessage("Error: %s");
 }

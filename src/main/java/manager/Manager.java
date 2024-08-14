@@ -112,6 +112,14 @@ public class Manager extends JavaPlugin
                 pluginEntry.getKey().onDisable();
             }
         }
+
+        //TODO: Richtig so?
+        try{
+            this.getConfig().save("config.yml");
+        }
+        catch(Exception e) {
+            Bukkit.getLogger().warning(e.getMessage());
+        }
     }
 
     public void enablePlugin(ManagedPlugin plugin) {

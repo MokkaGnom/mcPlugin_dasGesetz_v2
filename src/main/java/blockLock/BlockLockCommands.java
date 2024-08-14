@@ -46,17 +46,12 @@ public class BlockLockCommands implements TabExecutor
         if(args.length == 1) // lock/unlock/listFriends
         {
             if(args[0].equalsIgnoreCase("test") && blManager.hasAdminPermission(sender)) {
-                for(UUID uuid1 : blManager.getFriends()) {
-                    blManager.sendMessage(sender, "K: " + uuid1.toString());
-                    for(UUID uuid2 : blManager.getFriends(uuid1)) {
-                        blManager.sendMessage(sender, "V: " + uuid2.toString());
-                    }
-                    blManager.sendMessage(sender, "--------------------");
-                }
+                blManager.sendMessage(player, BlockLock.getBlockLockMeta(block));
+                return true;
             }
 
             if(args[0].equalsIgnoreCase(CommandStrings.UNLOCK)) {
-                blManager.unlock(player, block);
+                blManager.unlock(player, block, true);
             }
             else if(args[0].equalsIgnoreCase(CommandStrings.LOCK)) {
                 blManager.lock(player, block);

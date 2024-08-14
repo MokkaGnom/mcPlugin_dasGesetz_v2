@@ -11,7 +11,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemFactory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -23,10 +22,10 @@ import java.util.UUID;
 
 public class BlockLockManagerMenu implements Listener
 {
-    private static final int INV_SIZE = 9;
     private static final Material[] material = {Material.RED_WOOL, Material.AIR, Material.AIR, Material.HOPPER, Material.AIR, Material.REDSTONE, Material.AIR, Material.AIR,
             Material.PLAYER_HEAD};
     private static final String[] name = {"Unlock", "", "", "Lock Hopper", "", "Lock Redstone", "", "", "Local Friends"};
+    private static final int INV_SIZE = material.length;
 
     private final BlockLockManager blManager;
     private final BlockLock blockLock;
@@ -69,7 +68,7 @@ public class BlockLockManagerMenu implements Listener
         if(slotIndex != -1) {
             switch(slotIndex) {
                 case 0:
-                    blManager.unlock(p, blockLock);
+                    blManager.unlock(p, blockLock, true);
                     p.closeInventory();
                     break;
                 case 3:
