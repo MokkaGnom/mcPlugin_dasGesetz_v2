@@ -17,10 +17,7 @@ import org.bukkit.entity.Wither;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.block.BlockRedstoneEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
@@ -28,7 +25,6 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.inventory.BlockInventoryHolder;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.metadata.FixedMetadataValue;
 import utility.ErrorMessage;
 import utility.HelperFunctions;
@@ -82,7 +78,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
 
     private final FileConfiguration saveConfigFile;
     private final FileConfiguration saveFriendsConfigFile;
-    private final Map<UUID, Set<BlockLock>> blockLocks;
+    private final Map<UUID, Set<Block>> blockLocks;
     private final Map<UUID, Set<UUID>> globalFriends;
 
     public BlockLockManager() {
@@ -90,12 +86,6 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         this.saveFriendsConfigFile = YamlConfiguration.loadConfiguration(SAVE_FILE_FRIENDS);
         this.blockLocks = new HashMap<>();
         this.globalFriends = new HashMap<>();
-    }
-
-    @EventHandler
-    public void onWorldSave(WorldSaveEvent event) {
-        if(event.getWorld().getName().equals(Bukkit.getWorlds().getFirst().getName()))
-            saveToFile();
     }
 
     @EventHandler
@@ -123,36 +113,33 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-            BlockLock bl = getBlockLock(event.getClickedBlock());
-            if(bl != null) {
-                if(hasPermissionToOpen(player, bl)) {
-                    if(getShowSneakMenu(player) && player.getInventory().getItemInMainHand().getType() == Material.AIR && player.isSneaking()) {
-                        bl.openManagerMenu(player, this);
-                        event.setCancelled(true);
-
-                    }
-                }
-                else {
-                    sendMessage(player, ErrorMessage.NO_PERMISSION.message());
+        Block block = event.getClickedBlock();
+        if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && BlockLock.isBlockLock(block)) {
+            if(hasPermissionToOpen(player, block)) {
+                if(getShowSneakMenu(player) && player.getInventory().getItemInMainHand().getType() == Material.AIR && player.isSneaking()) {
+                    (new BlockLockManagerMenu(this, block)).open(player); //TODO: Testen
                     event.setCancelled(true);
                 }
             }
+            else {
+                sendMessage(player, ErrorMessage.NO_PERMISSION.message());
+                event.setCancelled(true);
+            }
+
         }
     }
 
     @Override
     public boolean saveToFile() {
-
         // Save BlockLocks
-        for(Map.Entry<UUID, Set<BlockLock>> entry : blockLocks.entrySet()) {
-            Set<BlockLock> blockLockSet = entry.getValue();
-            if(blockLockSet == null || blockLockSet.isEmpty())
+        for(Map.Entry<UUID, Set<Block>> entry : blockLocks.entrySet()) {
+            Set<Block> blockSet = entry.getValue();
+            if(blockSet == null || blockSet.isEmpty())
                 continue;
 
             ConfigurationSection uuidSection = saveConfigFile.createSection(entry.getKey().toString());
-            for(BlockLock bl : blockLockSet) {
-                bl.save(uuidSection.createSection(Integer.toString(bl.hashCode())));
+            for(Block bl : blockSet) {
+                BlockLock.save(uuidSection.createSection(Integer.toString(bl.hashCode())), bl);
             }
         }
 
@@ -196,7 +183,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
                 if(blSection == null)
                     continue;
                 for(String blID : blSection.getKeys(false)) {
-                    BlockLock bl = BlockLock.load(owner, blSection.getConfigurationSection(blID));
+                    Block bl = BlockLock.load(owner, blSection.getConfigurationSection(blID));
                     if(bl != null) {
                         addBlockLock(bl);
                     }
@@ -243,10 +230,9 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         }
 
         if(!BlockLock.isBlockLock(block)) {
-            BlockLock bl = new BlockLock(block, player.getUniqueId());
-            if(addBlockLock(bl)) {
+            if(BlockLock.createBlockLock(block, player.getUniqueId(), true) && addBlockLock(block)) {
                 sendMessage(player, String.format(BLOCK_LOCKED, block.getType().toString()));
-                Bukkit.getScheduler().runTaskLaterAsynchronously(Manager.getInstance(), bl::synchSecondBlock, 2);
+                Bukkit.getScheduler().runTaskLaterAsynchronously(Manager.getInstance(), () -> BlockLock.synchSecondBlock(block), 2);
                 return true;
             }
             else {
@@ -259,21 +245,17 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         return false;
     }
 
-    public boolean unlock(Player player, Block b, boolean second) {
-        return unlock(player, getBlockLock(b), second);
-    }
-
-    public boolean unlock(Player player, BlockLock blockLock, boolean second) {
-        if(blockLock != null) {
-            Block secondBlock = second ? blockLock.getSecondBlock() : null;
-            if(hasPermissionToOpen(player, blockLock)) {
-                if(removeBlockLock(blockLock) && (secondBlock == null || removeBlockLock(getBlockLock(secondBlock)))) {
-                    blockLock.delete(second);
-                    sendMessage(player, String.format(BLOCK_UNLOCKED, blockLock.getBlock().getType().name()));
+    public boolean unlock(Player player, Block block, boolean second) {
+        if(block != null) {
+            Block secondBlock = second ? BlockLock.getSecondBlock(block) : null;
+            if(hasPermissionToOpen(player, block)) {
+                if(removeBlockLock(block) && (secondBlock == null || removeBlockLock(secondBlock))) {
+                    BlockLock.delete(block, second);
+                    sendMessage(player, String.format(BLOCK_UNLOCKED, block.getType().name()));
                     return true;
                 }
                 else {
-                    sendMessage(player, String.format(ErrorMessage.UNIVERSAL_ERROR.message(), "Remove=false | Owner=" + (blockLock.getOwner() != null ? blockLock.getOwner().toString() : "null")));
+                    sendMessage(player, String.format(ErrorMessage.UNIVERSAL_ERROR.message(), "Remove=false | Owner=" + (BlockLock.getOwner(block) != null ? BlockLock.getOwner(block).toString() : "null")));
                     return false;
                 }
             }
@@ -292,33 +274,30 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
      * @return Globale und lokale Freunde oder null, wenn Block kein BlockLock ist
      */
     public Set<UUID> getFriends(UUID owner, Block block) {
-        BlockLock bl = getBlockLock(block);
-        if(bl == null) {
+        if(!BlockLock.isBlockLock(block)) {
             return null;
         }
         Set<UUID> set = new HashSet<>(getFriends(owner));
-        set.addAll(bl.getLocalFriends());
+        set.addAll(BlockLock.getLocalFriends(block));
         return set;
     }
 
-    public boolean addLocalFriend(UUID owner, Block b, UUID friend) {
-        if(owner == null || b == null || friend == null || owner == friend)
+    public boolean addLocalFriend(UUID owner, Block block, UUID friend) {
+        if(owner == null || block == null || friend == null || owner == friend)
             return false;
 
-        BlockLock bl = getBlockLock(b);
-        if(bl != null && bl.getOwner().equals(owner)) {
-            return bl.addFriend(friend);
+        if(BlockLock.isBlockLock(block) && BlockLock.getOwner(block).equals(owner)) {
+            return BlockLock.getLocalFriends(block).add(friend);
         }
         return false;
     }
 
-    public boolean removeLocalFriend(UUID owner, Block b, UUID friend) {
-        if(owner == null || b == null || friend == null || owner == friend)
+    public boolean removeLocalFriend(UUID owner, Block block, UUID friend) {
+        if(owner == null || block == null || friend == null || owner == friend)
             return false;
 
-        BlockLock bl = getBlockLock(b);
-        if(bl != null && bl.getOwner().equals(owner)) {
-            return bl.removeFriend(friend);
+        if(BlockLock.isBlockLock(block) && BlockLock.getOwner(block).equals(owner)) {
+            return BlockLock.getLocalFriends(block).remove(friend);
         }
         return false;
     }
@@ -335,16 +314,17 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         return removeFriend(owner, friend);
     }
 
+    //TODO: Was macht die Methode bzw braucht man die?
     public boolean checkIfNextBlockIsLocked(Block b, Player player) {
-        BlockLock bl = null;
+        Block nextBlock = null;
         for(int[] offset : HelperFunctions.OFFSETS) {
             Block relativeBlock = b.getRelative(offset[0], offset[1], offset[2]);
             if(BlockLock.isBlockLock(relativeBlock)) {
-                bl = getBlockLock(relativeBlock);
+                nextBlock = relativeBlock;
                 break;
             }
         }
-        return bl != null && !hasPermissionToOpen(player, bl);
+        return BlockLock.isBlockLock(nextBlock) && !hasPermissionToOpen(player, nextBlock);
     }
 
     public boolean getShowSneakMenu(Player player) {
@@ -389,23 +369,22 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         return user != null && getFriends(user).remove(friend);
     }
 
-    public Set<BlockLock> getBlockLocks(UUID user) {
+    public Set<Block> getBlockLocks(UUID user) {
         return this.blockLocks.computeIfAbsent(user, k -> new HashSet<>());
     }
 
-    public boolean addBlockLock(BlockLock bl) {
-        return bl != null && getBlockLocks(bl.getOwner()).add(bl);
+    public boolean addBlockLock(Block block) {
+        return BlockLock.isBlockLock(block) && getBlockLocks(BlockLock.getOwner(block)).add(block);
     }
 
-    public boolean removeBlockLock(BlockLock bl) {
-        return bl != null && getBlockLocks(bl.getOwner()).remove(bl);
+    public boolean removeBlockLock(Block block) {
+        return BlockLock.isBlockLock(block) && getBlockLocks(BlockLock.getOwner(block)).remove(block);
     }
 
-    public boolean hasPermissionToOpen(Player player, BlockLock blockLock) {
-        return hasAdminPermission(player) || hasDefaultUsePermission(player) && (
-                blockLock.getOwner().equals(player.getUniqueId())
-                        || blockLock.checkIfFriend(player.getUniqueId())
-                        || getFriends(blockLock.getOwner()).contains(player.getUniqueId())
+    public boolean hasPermissionToOpen(Player player, Block block) {
+        return hasAdminPermission(player) || hasDefaultUsePermission(player) && BlockLock.isBlockLock(block) && (
+                BlockLock.hasPermissionToOpen(block, player.getUniqueId())
+                        || getFriends(BlockLock.getOwner(block)).contains(player.getUniqueId())
         );
     }
 
@@ -413,41 +392,17 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         return LOCKABLE_BLOCKS.contains(block.getType());
     }
 
-    public BlockLock getBlockLock(Block block) {
-        UUID owner = getOwner(block);
-        if(owner != null) {
-            for(BlockLock bl : getBlockLocks(owner)) {
-                if(bl.compareBlock(block)) {
-                    return bl;
-                }
-            }
-        }
-        return null;
-    }
-
-    public BlockLock getBlockLock(Inventory inventory) {
-        if(inventory == null) {
-            return null;
-        }
-
-        // Sollte immer funktionieren
-        if(inventory.getHolder() instanceof BlockInventoryHolder blockInventoryHolder) {
-            return getBlockLock(blockInventoryHolder.getBlock());
-        }
-
-        for(Map.Entry<UUID, Set<BlockLock>> entry : blockLocks.entrySet()) {
-            for(BlockLock bl : entry.getValue()) {
-                Inventory inv = bl.getInventory();
-                if(inventory.equals(inv)) {
-                    return bl;
-                }
-            }
-        }
-        return null;
-    }
-
     /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
     // Protecting Block:
+
+    //TODO: Wenn eine WindCharge auf eine Tür trifft, wird diese geöffnet
+    @EventHandler
+    public void onWind(BlockDamageEvent event) {
+        Block block = event.getBlock();
+        if(BlockLock.isBlockLock(block)) {
+            event.setCancelled(true);
+        }
+    }
 
     /**
      * Preventing BlockLocks (example: doors, trapdoors) to be activated by Redstone
@@ -470,7 +425,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         Player player = event.getPlayer();
         if(BlockLock.getOwner(block) instanceof UUID owner) {
             if(owner.equals(player.getUniqueId())) {
-                unlock(player, getBlockLock(block), false);
+                unlock(player, block, false);
             }
             else {
                 event.setCancelled(true);
@@ -503,15 +458,16 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
     @EventHandler
     public void onInventoryMoveItem(InventoryMoveItemEvent event) {
         //TODO: Stimmen die Bedingungen?
-        event.setCancelled((// Prevents Hopper, etc. from PUTTING items IN the chest
+        if((// Prevents Hopper, etc. from PUTTING items IN the chest
                 event.getSource().getHolder() instanceof BlockInventoryHolder blockInventoryHolderSrc
                         && Objects.requireNonNullElse(BlockLock.getHopperLock(blockInventoryHolderSrc.getBlock()), false)
                         && !event.getDestination().getType().equals(InventoryType.PLAYER)
         ) || (// Prevents Hopper, etc. from REMOVING items FROM the chest
                 event.getDestination().getHolder() instanceof BlockInventoryHolder blockInventoryHolderDest
                         && Objects.requireNonNullElse(BlockLock.getHopperLock(blockInventoryHolderDest.getBlock()), false)
-        ));
-
+        )) {
+            event.setCancelled(true);
+        }
     }
 
     //------------------------------------------------------------------------------------------------------------------
