@@ -150,6 +150,6 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
 
     @Override
     public String getName() {
-        return "Manager";
+        return "DG-Manager";
     }
 }

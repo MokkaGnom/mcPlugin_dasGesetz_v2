@@ -4,6 +4,7 @@ import manager.ManagedPlugin;
 
 import java.util.*;
 
+@Deprecated
 public class PerformanceTracker
 {
     public static final PerformanceTracker INSTANCE = new PerformanceTracker();

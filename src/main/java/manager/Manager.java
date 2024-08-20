@@ -30,6 +30,7 @@ public class Manager extends JavaPlugin
     private static Manager instance;
 
     private final ManagerCommands managerCommands;
+    private final ManagerEvents managerEvents;
     private final Map<ManagedPlugin, Boolean> plugins;
 
     /**
@@ -38,6 +39,7 @@ public class Manager extends JavaPlugin
      */
     public Manager() {
         this.managerCommands = new ManagerCommands();
+        this.managerEvents = new ManagerEvents();
         this.plugins = new HashMap<>();
     }
 
@@ -86,6 +88,7 @@ public class Manager extends JavaPlugin
         sendInfoMessage(MESSAGE_PREFIX,"Enable plugins...");
 
         managerCommands.onEnable();
+        managerEvents.onEnable();
         createDefaultConfig();
 
         Map<ManagedPlugin, Boolean> newPlugins = new HashMap<>();
@@ -106,6 +109,7 @@ public class Manager extends JavaPlugin
     @Override
     public void onDisable() {
         managerCommands.onDisable();
+        managerEvents.onDisable();
 
         for(Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet()) {
             if(pluginEntry.getValue()) {
@@ -156,7 +160,7 @@ public class Manager extends JavaPlugin
             finalPath.append(s);
             finalPath.append(".");
         }
-        return finalPath.toString().substring(0, finalPath.toString().length() - 1);
+        return finalPath.substring(0, finalPath.toString().length() - 1);
     }
 
     public static long convertSecondsToTicks(double seconds) {
