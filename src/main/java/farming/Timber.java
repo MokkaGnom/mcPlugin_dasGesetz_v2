@@ -2,7 +2,9 @@ package farming;
 
 import manager.ManagedPlugin;
 import manager.Manager;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.Leaves;
@@ -33,6 +35,8 @@ public class Timber implements Listener, ManagedPlugin
             Material.CHERRY_LOG, Material.CHERRY_LEAVES
     );
     public static final Set<Material> TIMBER_TOOL_MATERIAL = Set.of(Material.DIAMOND_AXE, Material.GOLDEN_AXE, Material.IRON_AXE, Material.NETHERITE_AXE, Material.STONE_AXE, Material.WOODEN_AXE);
+    public static final int BREAK_LEAVES_RADIUS = 8;
+    public static final int BREAK_LEAVES_HEIGHT = 20;
     private static final String BREAK_LEAVES_JSON_KEY = "Timber.BreakLeaves";
     private final boolean breakLeaves;
 
@@ -40,17 +44,24 @@ public class Timber implements Listener, ManagedPlugin
         this.breakLeaves = Manager.getInstance().getConfig().getBoolean(BREAK_LEAVES_JSON_KEY);
     }
 
-    //TODO: Radius zu klein
-    public void breakLeaves(List<Block> treeTrunkBlocks, Material treeMaterial) {
+    //TODO: Testen (vor allem die Zeit überprüfen)
+    public void breakLeaves(Location treeTrunkLocation, Material treeMaterial) {
+        long startTime = System.currentTimeMillis();
         Material leaveMaterial = TIMBER_BLOCK_MATERIAL.get(treeMaterial);
-        for(Block block : treeTrunkBlocks) {
-            List<Block> relativeBlocks = HelperFunctions.getRelativeBlocks(block, leaveMaterial);
-            for(Block leaveBlock : relativeBlocks) {
-                if(leaveBlock.getBlockData() instanceof Leaves leave && !leave.isPersistent()) {
-                    leaveBlock.breakNaturally();
+        Location firstLocation = treeTrunkLocation.subtract(BREAK_LEAVES_RADIUS, 0, BREAK_LEAVES_RADIUS);
+        Location secondLocation = treeTrunkLocation.add(BREAK_LEAVES_RADIUS, BREAK_LEAVES_HEIGHT, BREAK_LEAVES_RADIUS);
+        for(int y = firstLocation.getBlockY(); y <= secondLocation.getBlockY(); y++) {
+            for(int x = firstLocation.getBlockX(); x <= secondLocation.getBlockX(); x++) {
+                for(int z = firstLocation.getBlockZ(); z <= secondLocation.getBlockZ(); z++) {
+                    Block block = treeTrunkLocation.getWorld().getBlockAt(x, y, z);
+                    if(block.getType().equals(leaveMaterial) && block.getBlockData() instanceof Leaves leave && !leave.isPersistent()) {
+                        Bukkit.getScheduler().runTask(Manager.getInstance(), () -> block.breakNaturally());
+                    }
                 }
             }
         }
+        Manager.getInstance().sendInfoMessage(getMessagePrefix(),
+                String.format("BreakLeaves-Time: %sms", System.currentTimeMillis() - startTime));
     }
 
     /**
@@ -136,9 +147,9 @@ public class Timber implements Listener, ManagedPlugin
         // Breaking tree
         if(TIMBER_BLOCK_MATERIAL.containsKey(block.getType())
                 && TIMBER_TOOL_MATERIAL.contains(player.getInventory().getItemInMainHand().getType())) {
-            List<Block> treeTrunkBlocks = breakWood(block, player);
+            breakWood(block, player);
             if(breakLeaves) {
-                breakLeaves(treeTrunkBlocks, blockMaterial);
+                Bukkit.getScheduler().runTaskAsynchronously(Manager.getInstance(), () -> breakLeaves(block.getLocation(), blockMaterial));
             }
         }
     }
