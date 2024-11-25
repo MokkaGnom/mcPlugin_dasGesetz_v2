@@ -14,13 +14,17 @@ import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 public class PlayerTrophyManager implements Listener, ManagedPlugin
 {
     public static final String PROBABILITY_JSON_KEY = "PlayerTrophy.DropProbability";
     public static final String CHANGE_SOUND_JSON_KEY = "PlayerTrophy.ChangeSound";
-    public static final String PLAYER_TROPHY_LORE = "Killed by %s";
-    public static final NamespacedKey PLAYER_TROPHY_NOTEBLOCK_SOUND = new NamespacedKey("minecraft", "entity.slime.jump");
+    public static final String PLAYER_TROPHY_LORE_KILLED = "Killed by %s";
+    public static final List<NamespacedKey> PLAYER_TROPHY_NOTEBLOCK_SOUND = List.of(
+            new NamespacedKey("minecraft", "entity.slime.jump"),
+            new NamespacedKey("minecraft", "entity.cod.hurt")
+    );
 
     private final double dropProbability;
     private final boolean changeSound;
@@ -28,16 +32,16 @@ public class PlayerTrophyManager implements Listener, ManagedPlugin
     public PlayerTrophyManager() {
         this.dropProbability = Manager.getInstance().getConfig().getDouble(PROBABILITY_JSON_KEY);
         this.changeSound = Manager.getInstance().getConfig().getBoolean(CHANGE_SOUND_JSON_KEY);
-
     }
 
     private ItemStack createTrophy(OfflinePlayer owningPlayer, OfflinePlayer killer) {
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) head.getItemMeta();
         meta.setOwningPlayer(owningPlayer);
-        meta.setLore(Arrays.asList(String.format(PLAYER_TROPHY_LORE, killer.getName())));
+        meta.setLore(Arrays.asList(String.format(PLAYER_TROPHY_LORE_KILLED, killer.getName())));
         if(changeSound) {
-            meta.setNoteBlockSound(PLAYER_TROPHY_NOTEBLOCK_SOUND);
+            int index = (new Random()).nextInt(PLAYER_TROPHY_NOTEBLOCK_SOUND.size());
+            meta.setNoteBlockSound(PLAYER_TROPHY_NOTEBLOCK_SOUND.get(index));
         }
         head.setItemMeta(meta);
         return head;
