@@ -14,7 +14,7 @@ public class ManagerEvents implements Listener, ManagedPlugin
     @EventHandler
     public void onWorldSave(WorldSaveEvent event) {
         if(event.getWorld().getName().equals(Bukkit.getWorlds().getFirst().getName())) {
-            for(ManagedPlugin plugin : Manager.getInstance().getPlugins().keySet()) {
+            for(ManagedPlugin plugin : Manager.getInstance().getSubPlugins().keySet()) {
                 if(plugin instanceof Saveable saveable) {
                     saveable.saveToFile();
                 }

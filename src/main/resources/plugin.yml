@@ -116,3 +116,6 @@ permissions:
   dg.prefixAdminPermission:
     description: Allows a Player to use admin prefix commands
     default: op
+  dg.playerTrophyPermission:
+    description: Allows a Player to drop their head when killed by another player
+    default: true

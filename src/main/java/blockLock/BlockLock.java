@@ -213,7 +213,9 @@ public class BlockLock
         if(block.hasMetadata(META_DATA.REDSTONE_LOCK)) {
             block.setMetadata(META_DATA.REDSTONE_LOCK, new FixedMetadataValue(Manager.getInstance(),
                     !block.getMetadata(META_DATA.REDSTONE_LOCK).getFirst().asBoolean()));
+            return true;
         }
+        return false;
     }
 
     public static Boolean getHopperLock(Block block) {

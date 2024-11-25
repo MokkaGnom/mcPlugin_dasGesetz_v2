@@ -5,10 +5,16 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.damage.DamageSource;
+import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.inventory.ItemStack;
+import playerTrophy.PlayerTrophyManager;
 import utility.ErrorMessage;
 import utility.HelperFunctions;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,8 +44,13 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
         }
 
         if(args.length == 1) {
-            if(args[0].equals(CommandStrings.PERFORMANCE)) {
-                sendMessage(sender, PerformanceTracker.INSTANCE.getObjectCountAsStringOutput(PerformanceTracker.INSTANCE.getPerformancePlugins(Manager.getInstance().getPlugins().keySet())));
+            if(args[0].equalsIgnoreCase(CommandStrings.PERFORMANCE)) {
+                sendMessage(sender, PerformanceTracker.INSTANCE.getObjectCountAsStringOutput(PerformanceTracker.INSTANCE.getPerformancePlugins(Manager.getInstance().getSubPlugins().keySet())));
+                return true;
+            }
+            else if(args[0].equalsIgnoreCase("Test")) {
+                ((PlayerTrophyManager) Manager.getInstance().getSubPlugin(PlayerTrophyManager.class)).onPlayerDeath(new PlayerDeathEvent(player, DamageSource.builder(DamageType.PLAYER_ATTACK).withCausingEntity(player).build(), new ArrayList<ItemStack>(), 0, "test"));
+                sendMessage(sender, "Test-Event triggered!");
                 return true;
             }
             else {
@@ -49,7 +60,7 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
         }
         else if(args.length == 3) {
             if(args[0].equalsIgnoreCase(CommandStrings.MANAGE)) {
-                ManagedPlugin plugin = Manager.getInstance().getPlugins().keySet().stream()
+                ManagedPlugin plugin = Manager.getInstance().getSubPlugins().keySet().stream()
                         .filter(p -> p.getName().equalsIgnoreCase(args[1]))
                         .findFirst().orElse(null);
                 if(plugin != null) {
@@ -104,7 +115,7 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
         }
         else if(args.length == 2) {
             if(args[0].equalsIgnoreCase(CommandStrings.MANAGE)) {
-                return Manager.getInstance().getPlugins().keySet().stream().map(ManagedPlugin::getName).toList();
+                return Manager.getInstance().getSubPlugins().keySet().stream().map(ManagedPlugin::getName).toList();
             }
             else if(args[0].equalsIgnoreCase(CommandStrings.PERMISSION)) {
                 return Manager.getInstance().getPermissions();

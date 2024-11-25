@@ -13,6 +13,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import other.Messages;
+import playerTrophy.PlayerTrophyManager;
 import villagerCreator.VillagerCreatorManager;
 import ping.PingManager;
 
@@ -84,8 +85,9 @@ public class Manager extends JavaPlugin
         this.plugins.put(new PingManager(), true);
         this.plugins.put(new VillagerCreatorManager(), true);
         this.plugins.put(new PrefixManager(), true);
+        this.plugins.put(new PlayerTrophyManager(), true);
 
-        sendInfoMessage(MESSAGE_PREFIX,"Enable plugins...");
+        sendInfoMessage(MESSAGE_PREFIX, "Enable plugins...");
 
         managerCommands.onEnable();
         managerEvents.onEnable();
@@ -97,13 +99,13 @@ public class Manager extends JavaPlugin
             newPlugins.put(pluginEntry.getKey(), enable);
 
             if(enable) {
-                sendInfoMessage(MESSAGE_PREFIX,"Enable \"" + pluginEntry.getKey().getName() + "\"...");
+                sendInfoMessage(MESSAGE_PREFIX, "Enable \"" + pluginEntry.getKey().getName() + "\"...");
                 pluginEntry.getKey().onEnable();
             }
         }
         this.plugins.putAll(newPlugins);
 
-        sendInfoMessage(MESSAGE_PREFIX,"All plugins enabled");
+        sendInfoMessage(MESSAGE_PREFIX, "All plugins enabled");
     }
 
     @Override
@@ -118,10 +120,9 @@ public class Manager extends JavaPlugin
         }
 
         //TODO: Richtig so?
-        try{
+        try {
             this.getConfig().save("config.yml");
-        }
-        catch(Exception e) {
+        } catch(Exception e) {
             Bukkit.getLogger().warning(e.getMessage());
         }
     }
@@ -150,7 +151,16 @@ public class Manager extends JavaPlugin
                 .toList();
     }
 
-    public Map<ManagedPlugin, Boolean> getPlugins() {
+    public ManagedPlugin getSubPlugin(Class<? extends ManagedPlugin> pluginClass) {
+        for(Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet()) {
+            if(pluginEntry.getKey().getClass().equals(pluginClass) && pluginEntry.getValue()) {
+                return pluginEntry.getKey();
+            }
+        }
+        return null;
+    }
+
+    public Map<ManagedPlugin, Boolean> getSubPlugins() {
         return plugins;
     }
 
