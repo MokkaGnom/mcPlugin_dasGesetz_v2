@@ -1,6 +1,6 @@
 main: manager.Manager
 name: dasGesetz
-version: 3.7.8
+version: 3.7.9
 api-version: 1.21
 author: MokkaGnom
 description: Das Gesetz. Timber, EasyFarming, DeathChest, BlockLock, Home, Ping

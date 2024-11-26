@@ -48,11 +48,6 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
                 sendMessage(sender, PerformanceTracker.INSTANCE.getObjectCountAsStringOutput(PerformanceTracker.INSTANCE.getPerformancePlugins(Manager.getInstance().getSubPlugins().keySet())));
                 return true;
             }
-            else if(args[0].equalsIgnoreCase("Test")) {
-                ((PlayerTrophyManager) Manager.getInstance().getSubPlugin(PlayerTrophyManager.class)).onPlayerDeath(new PlayerDeathEvent(player, DamageSource.builder(DamageType.PLAYER_ATTACK).withCausingEntity(player).build(), new ArrayList<ItemStack>(), 0, "test"));
-                sendMessage(sender, "Test-Event triggered!");
-                return true;
-            }
             else {
                 sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
                 return false;

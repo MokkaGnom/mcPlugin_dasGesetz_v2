@@ -79,7 +79,7 @@ public class BlockLockManagerMenu implements Listener
                 case 0:
                     blManager.unlock(p, block, true);
                     p.closeInventory();
-                    break;
+                    return true;
                 case 3:
                     BlockLock.switchHopperLock(block);
                     break;
@@ -218,7 +218,7 @@ public class BlockLockManagerMenu implements Listener
 
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        if(event.getInventory().equals(inv) || event.getInventory().equals(friendsInv)) { //TODO: Stimmt die Bedingung?
+        if(event.getInventory().equals(inv) || event.getInventory().equals(friendsInv)) {
             HandlerList.unregisterAll(this);
         }
     }

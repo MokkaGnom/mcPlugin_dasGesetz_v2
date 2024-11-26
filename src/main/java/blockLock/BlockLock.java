@@ -8,7 +8,6 @@ import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.Door;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.BlockInventoryHolder;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -55,7 +54,6 @@ public class BlockLock
     private static boolean createSecondBlockLock(Block block) {
         Block secondBlock = findSecondBlock(block);
         if(secondBlock != null) {
-            createBlockLock(secondBlock, BlockLock.getOwner(block), false);
             block.setMetadata(META_DATA.SECOND_BLOCK, new FixedMetadataValue(Manager.getInstance(), secondBlock));
             secondBlock.setMetadata(META_DATA.SECOND_BLOCK, new FixedMetadataValue(Manager.getInstance(), block));
             return true;
@@ -120,7 +118,7 @@ public class BlockLock
 
         return createBlockLock(location.getBlock(),
                 owner, hopperLock, redstoneLock,
-                friendsList.stream().map(UUID::fromString).collect(Collectors.toSet()), false/*TODO: Evtl. true*/) ? location.getBlock() : null;
+                friendsList.stream().map(UUID::fromString).collect(Collectors.toSet()), true) ? location.getBlock() : null;
     }
 
     private static String getBlockLockMetaValueAsString(Block block, String key) {
@@ -130,6 +128,36 @@ public class BlockLock
         List<MetadataValue> meta = block.getMetadata(key);
         builder.append(!meta.isEmpty() ? meta.getFirst().asString() : "null");
         return builder.toString();
+    }
+
+    private static boolean hasMetadata(Block block, String key) {
+        if(block == null || key == null) return false;
+        if(block.hasMetadata(META_DATA.SECOND_BLOCK) && !block.hasMetadata(META_DATA.OWNER)) { // block is second
+            if(block.getMetadata(META_DATA.SECOND_BLOCK).getFirst().value() instanceof Block mainBlock) {
+                return mainBlock.hasMetadata(key);
+            }
+        }
+        return block.hasMetadata(key);
+    }
+
+    private static List<MetadataValue> getMetadata(Block block, String key) {
+        if(block == null || key == null) return null;
+        if(block.hasMetadata(META_DATA.SECOND_BLOCK) && !block.hasMetadata(META_DATA.OWNER)) { // block is second
+            if(block.getMetadata(META_DATA.SECOND_BLOCK).getFirst().value() instanceof Block mainBlock) {
+                return mainBlock.getMetadata(key);
+            }
+        }
+        return block.getMetadata(key);
+    }
+
+    private static void setMetadata(Block block, String key, MetadataValue value) {
+        if(block == null || key == null || value == null) return;
+        if(isSecondBlock(block)) { // block is second
+            if(block.getMetadata(META_DATA.SECOND_BLOCK).getFirst().value() instanceof Block mainBlock) {
+                mainBlock.setMetadata(key, value);
+            }
+        }
+        block.setMetadata(key, value);
     }
 
     public static String getBlockLockMeta(Block block) {
@@ -144,43 +172,52 @@ public class BlockLock
                 getBlockLockMetaValueAsString(block, META_DATA.SECOND_BLOCK);
     }
 
-    public static void synchSecondBlock(Block block) {
-        //TODO
-    }
-
     public static boolean isBlockLock(Inventory inventory) {
         return inventory.getHolder() instanceof BlockInventoryHolder blockInventoryHolder && isBlockLock(blockInventoryHolder.getBlock());
     }
 
     public static boolean isBlockLock(Block block) {
-        return block != null && block.hasMetadata(META_DATA.LOCKED);
+        return hasMetadata(block, META_DATA.LOCKED);
+    }
+
+    public static Block getSecondBlock(Block block) {
+        if(block.hasMetadata(META_DATA.SECOND_BLOCK) && block.getMetadata(META_DATA.SECOND_BLOCK).getFirst().value() instanceof Block secondBlock) {
+            return secondBlock;
+        }
+        return null;
+    }
+
+    public static boolean isSecondBlock(Block block) {
+        return block.hasMetadata(META_DATA.SECOND_BLOCK) && !block.hasMetadata(META_DATA.OWNER);
     }
 
     public static UUID getOwner(Block block) {
-        if(block != null && block.hasMetadata(META_DATA.OWNER)) {
-            return UUID.fromString(block.getMetadata(META_DATA.OWNER).getFirst().asString());
+        if(hasMetadata(block, META_DATA.OWNER)) {
+            return UUID.fromString(getMetadata(block, META_DATA.OWNER).getFirst().asString());
         }
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     public static Set<UUID> getLocalFriends(Block block) {
-        if(block != null && block.hasMetadata(META_DATA.LOCAL_FRIENDS)) {
-            return (Set<UUID>) block.getMetadata(META_DATA.LOCAL_FRIENDS).getFirst().value(); //TODO
+        if(block == null) return null;
+        if(hasMetadata(block, META_DATA.LOCAL_FRIENDS)) {
+            return (Set<UUID>) getMetadata(block, META_DATA.LOCAL_FRIENDS).getFirst().value();
         }
-        return null;
+        return isBlockLock(block) ? Collections.emptySet() : null;
     }
 
     public static boolean setLocalFriends(Block block, Set<UUID> friends) {
-        if(block != null && block.hasMetadata(META_DATA.LOCAL_FRIENDS)) {
-            block.setMetadata(META_DATA.LOCAL_FRIENDS, new FixedMetadataValue(Manager.getInstance(), friends));
+        if(hasMetadata(block, META_DATA.LOCAL_FRIENDS)) {
+            setMetadata(block, META_DATA.LOCAL_FRIENDS, new FixedMetadataValue(Manager.getInstance(), friends));
             return true;
         }
         return false;
     }
 
-    public static boolean removeLocalFriend(Block block, UUID friend){
+    public static boolean removeLocalFriend(Block block, UUID friend) {
         Set<UUID> localFriends = getLocalFriends(block);
-        if(localFriends != null && localFriends.contains(friend)){
+        if(localFriends != null && localFriends.contains(friend)) {
             localFriends.remove(friend);
             return setLocalFriends(block, localFriends);
         }
@@ -195,58 +232,51 @@ public class BlockLock
     }
 
     public static Boolean getRedstoneLock(Block block) {
-        if(block != null && block.hasMetadata(META_DATA.REDSTONE_LOCK)) {
-            return block.getMetadata(META_DATA.REDSTONE_LOCK).getFirst().asBoolean();
+        if(hasMetadata(block, META_DATA.REDSTONE_LOCK)) {
+            return getMetadata(block, META_DATA.REDSTONE_LOCK).getFirst().asBoolean();
         }
         return null;
     }
 
     public static boolean setRedstoneLock(Block block, boolean redstoneLock) {
-        if(block.hasMetadata(META_DATA.REDSTONE_LOCK)) {
-            block.setMetadata(META_DATA.REDSTONE_LOCK, new FixedMetadataValue(Manager.getInstance(), redstoneLock));
+        if(hasMetadata(block, META_DATA.REDSTONE_LOCK)) {
+            setMetadata(block, META_DATA.REDSTONE_LOCK, new FixedMetadataValue(Manager.getInstance(), redstoneLock));
             return true;
         }
         return false;
     }
 
     public static boolean switchRedstoneLock(Block block) {
-        if(block.hasMetadata(META_DATA.REDSTONE_LOCK)) {
-            block.setMetadata(META_DATA.REDSTONE_LOCK, new FixedMetadataValue(Manager.getInstance(),
-                    !block.getMetadata(META_DATA.REDSTONE_LOCK).getFirst().asBoolean()));
+        if(hasMetadata(block, META_DATA.REDSTONE_LOCK)) {
+            setMetadata(block, META_DATA.REDSTONE_LOCK, new FixedMetadataValue(Manager.getInstance(),
+                    !getMetadata(block, META_DATA.REDSTONE_LOCK).getFirst().asBoolean()));
             return true;
         }
         return false;
     }
 
     public static Boolean getHopperLock(Block block) {
-        if(block != null && block.hasMetadata(META_DATA.HOPPER_LOCK)) {
-            return block.getMetadata(META_DATA.HOPPER_LOCK).getFirst().asBoolean();
+        if(hasMetadata(block, META_DATA.HOPPER_LOCK)) {
+            return getMetadata(block, META_DATA.HOPPER_LOCK).getFirst().asBoolean();
         }
         return null;
     }
 
     public static boolean setHopperLock(Block block, boolean hopperLock) {
-        if(block.hasMetadata(META_DATA.HOPPER_LOCK)) {
-            block.setMetadata(META_DATA.HOPPER_LOCK, new FixedMetadataValue(Manager.getInstance(), hopperLock));
+        if(hasMetadata(block, META_DATA.HOPPER_LOCK)) {
+            setMetadata(block, META_DATA.HOPPER_LOCK, new FixedMetadataValue(Manager.getInstance(), hopperLock));
             return true;
         }
         return false;
     }
 
     public static boolean switchHopperLock(Block block) {
-        if(block.hasMetadata(META_DATA.HOPPER_LOCK)) {
-            block.setMetadata(META_DATA.HOPPER_LOCK, new FixedMetadataValue(Manager.getInstance(),
-                    !block.getMetadata(META_DATA.HOPPER_LOCK).getFirst().asBoolean()));
+        if(hasMetadata(block, META_DATA.HOPPER_LOCK)) {
+            setMetadata(block, META_DATA.HOPPER_LOCK, new FixedMetadataValue(Manager.getInstance(),
+                    !getMetadata(block, META_DATA.HOPPER_LOCK).getFirst().asBoolean()));
             return true;
         }
         return false;
-    }
-
-    public static Block getSecondBlock(Block block) {
-        if(block.hasMetadata(META_DATA.SECOND_BLOCK) && block.getMetadata(META_DATA.SECOND_BLOCK).getFirst().value() instanceof Block secondBlock) {
-            return secondBlock;
-        }
-        return null;
     }
 
     public static boolean isDoor(Block block) {
@@ -269,20 +299,19 @@ public class BlockLock
     }
 
     public static void delete(Block block, boolean second) {
+        if(isSecondBlock(block)) {
+            block = getSecondBlock(block);
+        }
         block.removeMetadata(META_DATA.LOCKED, Manager.getInstance());
         block.removeMetadata(META_DATA.OWNER, Manager.getInstance());
         block.removeMetadata(META_DATA.HOPPER_LOCK, Manager.getInstance());
         block.removeMetadata(META_DATA.REDSTONE_LOCK, Manager.getInstance());
         if(block.hasMetadata(META_DATA.SECOND_BLOCK)) {
-            Block secondBlock = findSecondBlock(block);
-            block.removeMetadata(META_DATA.SECOND_BLOCK, Manager.getInstance());
-            secondBlock.removeMetadata(META_DATA.SECOND_BLOCK, Manager.getInstance());
-            if(second || isDoor(block)) {
-                secondBlock.removeMetadata(META_DATA.LOCKED, Manager.getInstance());
-                secondBlock.removeMetadata(META_DATA.OWNER, Manager.getInstance());
-                secondBlock.removeMetadata(META_DATA.HOPPER_LOCK, Manager.getInstance());
-                secondBlock.removeMetadata(META_DATA.REDSTONE_LOCK, Manager.getInstance());
+            Block secondBlock = getSecondBlock(block);
+            if(secondBlock != null) {
+                secondBlock.removeMetadata(META_DATA.SECOND_BLOCK, Manager.getInstance());
             }
+            block.removeMetadata(META_DATA.SECOND_BLOCK, Manager.getInstance());
         }
     }
 }

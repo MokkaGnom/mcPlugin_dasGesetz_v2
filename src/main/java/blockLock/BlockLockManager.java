@@ -3,17 +3,13 @@ package blockLock;
 import manager.ManagedPlugin;
 import manager.Manager;
 import manager.Saveable;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Creeper;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.TNTPrimed;
-import org.bukkit.entity.Wither;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
@@ -23,7 +19,6 @@ import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.world.WorldSaveEvent;
 import org.bukkit.inventory.BlockInventoryHolder;
 import org.bukkit.metadata.FixedMetadataValue;
 import utility.ErrorMessage;
@@ -35,9 +30,10 @@ import java.util.stream.Collectors;
 
 import static blockLock.BlockLockConstants.*;
 
-//TODO: Das Plugin laggt wieder. Problem ist, dass die Funktionen (selbst die getBlockLock(Block)) Methode zu lange braucht.
+//TODO: Das Plugin laggt. Problem ist, dass die Funktionen (selbst die getBlockLock(Block)) Methode zu lange braucht.
 // Es kommt durchaus vor, dass die Funktion 50+ pro Tick aufgerufen wird, ein Tick is aber nur 50ms lang. Da die Funktion aber länger benötigt, dauert der Tick auch länger und dadurch laggt es.
 // Um alles effizienter zu machen, müssten alle Infos aus dem Model (BlockLock) in die Meta-Daten des Blocks geschrieben werden.
+// Sollte gefixt sein. Muss noch ausreichend getestet werden.
 public class BlockLockManager implements Listener, ManagedPlugin, Saveable
 {
     public static final Set<Material> LOCKABLE_BLOCKS = Set.of(
@@ -117,7 +113,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && BlockLock.isBlockLock(block)) {
             if(hasPermissionToOpen(player, block)) {
                 if(getShowSneakMenu(player) && player.getInventory().getItemInMainHand().getType() == Material.AIR && player.isSneaking()) {
-                    (new BlockLockManagerMenu(this, block)).open(player); //TODO: Testen
+                    (new BlockLockManagerMenu(this, block)).open(player);
                     event.setCancelled(true);
                 }
             }
@@ -132,6 +128,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
     @Override
     public boolean saveToFile() {
         // Save BlockLocks
+        long savedBlockLocks = 0;
         for(Map.Entry<UUID, Set<Block>> entry : blockLocks.entrySet()) {
             Set<Block> blockSet = entry.getValue();
             if(blockSet == null || blockSet.isEmpty())
@@ -139,11 +136,14 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
 
             ConfigurationSection uuidSection = saveConfigFile.createSection(entry.getKey().toString());
             for(Block bl : blockSet) {
-                BlockLock.save(uuidSection.createSection(Integer.toString(bl.hashCode())), bl);
+                if(BlockLock.save(uuidSection.createSection(Integer.toString(bl.hashCode())), bl)) {
+                    savedBlockLocks++;
+                }
             }
         }
 
         // Save GlobalFriends
+        long savedGlobalFriends = 0;
         for(Map.Entry<UUID, Set<UUID>> entry : globalFriends.entrySet()) {
             Set<UUID> friendSet = entry.getValue();
             if(friendSet == null || friendSet.isEmpty())
@@ -153,14 +153,15 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
             ConfigurationSection friendsSection = saveFriendsConfigFile.createSection(player);
             for(UUID uuid : friendSet) {
                 friendsSection.set(uuid.toString(), "");
+                savedGlobalFriends++;
             }
         }
 
         try {
             saveConfigFile.save(SAVE_FILE);
             saveFriendsConfigFile.save(SAVE_FILE_FRIENDS);
-            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(BLOCKS_SAVED, blockLocks.keySet().size(), blockLocks.entrySet().size()));
-            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(FRIENDS_SAVED, globalFriends.keySet().size(), globalFriends.entrySet().size()));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(BLOCKS_SAVED, blockLocks.keySet().size(), savedBlockLocks));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(FRIENDS_SAVED, globalFriends.keySet().size(), savedGlobalFriends));
             return true;
         } catch(Exception e) {
             Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
@@ -173,6 +174,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         boolean loaded = true;
 
         // Load BlockLocks
+        long blockLocksLoaded = 0;
         try {
             saveConfigFile.load(SAVE_FILE);
             ConfigurationSection uuidSection = saveConfigFile.getConfigurationSection("");
@@ -186,11 +188,12 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
                     Block bl = BlockLock.load(owner, blSection.getConfigurationSection(blID));
                     if(bl != null) {
                         addBlockLock(bl);
+                        blockLocksLoaded++;
                     }
                 }
             }
 
-            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(BLOCKS_LOADED, blockLocks.keySet().size(), blockLocks.values().size()));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(BLOCKS_LOADED, blockLocks.keySet().size(), blockLocksLoaded));
             loaded &= true;
         } catch(Exception e) {
             Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
@@ -200,17 +203,17 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         // Load Global Friends
         try {
             saveFriendsConfigFile.load(SAVE_FILE_FRIENDS);
-            int uuidValueSize = 0;
+            int globalFriendsLoaded = 0;
             ConfigurationSection uuidSection = saveFriendsConfigFile.getConfigurationSection("");
             Set<String> uuids = uuidSection.getKeys(false);
             for(String uuid : uuids) {
                 UUID player = UUID.fromString(uuid);
                 Set<String> friendsList = uuidSection.getConfigurationSection(uuid).getKeys(false);
-                uuidValueSize += friendsList.size();
+                globalFriendsLoaded += friendsList.size();
                 this.globalFriends.put(player, friendsList.stream().map(UUID::fromString).collect(Collectors.toSet()));
             }
 
-            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(FRIENDS_LOADED, globalFriends.keySet().size(), uuidValueSize));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(FRIENDS_LOADED, globalFriends.keySet().size(), globalFriendsLoaded));
             loaded &= true;
         } catch(Exception e) {
             Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
@@ -232,7 +235,6 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         if(!BlockLock.isBlockLock(block)) {
             if(BlockLock.createBlockLock(block, player.getUniqueId(), true) && addBlockLock(block)) {
                 sendMessage(player, String.format(BLOCK_LOCKED, block.getType().toString()));
-                Bukkit.getScheduler().runTaskLaterAsynchronously(Manager.getInstance(), () -> BlockLock.synchSecondBlock(block), 2);
                 return true;
             }
             else {
@@ -247,17 +249,15 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
 
     public boolean unlock(Player player, Block block, boolean second) {
         if(block != null) {
-            Block secondBlock = second ? BlockLock.getSecondBlock(block) : null;
             if(hasPermissionToOpen(player, block)) {
-                if(removeBlockLock(block) && (secondBlock == null || removeBlockLock(secondBlock))) {
-                    BlockLock.delete(block, second);
-                    sendMessage(player, String.format(BLOCK_UNLOCKED, block.getType().name()));
-                    return true;
+                UUID uuid = player.getUniqueId();
+                removeBlockLock(uuid, block);
+                if(second){
+                    removeBlockLock(uuid, BlockLock.getSecondBlock(block));
                 }
-                else {
-                    sendMessage(player, String.format(ErrorMessage.UNIVERSAL_ERROR.message(), "Remove=false | Owner=" + (BlockLock.getOwner(block) != null ? BlockLock.getOwner(block).toString() : "null")));
-                    return false;
-                }
+                BlockLock.delete(block, second);
+                sendMessage(player, String.format(BLOCK_UNLOCKED, block.getType().name()));
+                return true;
             }
             else {
                 sendMessage(player, ErrorMessage.NO_PERMISSION.message());
@@ -315,6 +315,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
     }
 
     //TODO: Was macht die Methode bzw braucht man die?
+    // Wahrscheinlich, um zu überprüfen, ob man z.B. eine Truhe neben eine andere fremde gelockte Truhe stellt (Testen!)
     public boolean checkIfNextBlockIsLocked(Block b, Player player) {
         Block nextBlock = null;
         for(int[] offset : HelperFunctions.OFFSETS) {
@@ -377,8 +378,8 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         return BlockLock.isBlockLock(block) && getBlockLocks(BlockLock.getOwner(block)).add(block);
     }
 
-    public boolean removeBlockLock(Block block) {
-        return BlockLock.isBlockLock(block) && getBlockLocks(BlockLock.getOwner(block)).remove(block);
+    public boolean removeBlockLock(UUID owner, Block block) {
+        return getBlockLocks(owner).remove(block);
     }
 
     public boolean hasPermissionToOpen(Player player, Block block) {
@@ -394,15 +395,6 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
 
     /* ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
     // Protecting Block:
-
-    //TODO: Wenn eine WindCharge auf eine Tür trifft, wird diese geöffnet
-    @EventHandler
-    public void onWind(BlockDamageEvent event) {
-        Block block = event.getBlock();
-        if(BlockLock.isBlockLock(block)) {
-            event.setCancelled(true);
-        }
-    }
 
     /**
      * Preventing BlockLocks (example: doors, trapdoors) to be activated by Redstone
@@ -442,11 +434,11 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
     }
 
     /**
-     * Preventing the Block from being blown up by Creeper, Wither or TNT
+     * Preventing the Block from being blown up by Creeper, Wither, TNT or Wind-Charge
      */
     @EventHandler
     public void onEntityExplode(EntityExplodeEvent event) {
-        if(event.getEntity() instanceof Creeper || event.getEntity() instanceof TNTPrimed || event.getEntity() instanceof Wither) {
+        if(event.getEntity() instanceof Creeper || event.getEntity() instanceof TNTPrimed || event.getEntity() instanceof Wither || event.getEntity() instanceof AbstractWindCharge) {
             event.blockList().removeAll(event.blockList().stream()
                     .filter(BlockLock::isBlockLock).toList());
         }
