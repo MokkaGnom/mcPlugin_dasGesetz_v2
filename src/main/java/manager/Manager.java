@@ -28,7 +28,7 @@ public class Manager extends JavaPlugin
 {
     private static final String JSON_PLUGIN_KEY = "Manager";
     private static final String MESSAGE_PREFIX = String.format(ManagedPlugin.MESSAGE_PREFIX, "DG-Manager");
-    private static Manager instance;
+    private static Manager instance = null;
 
     private final ManagerCommands managerCommands;
     private final ManagerEvents managerEvents;
@@ -39,6 +39,7 @@ public class Manager extends JavaPlugin
      * <p>Stattdessen: {@link Manager#getInstance()}</p>
      */
     public Manager() {
+        assert instance == null;
         this.managerCommands = new ManagerCommands();
         this.managerEvents = new ManagerEvents();
         this.plugins = new HashMap<>();
@@ -50,8 +51,7 @@ public class Manager extends JavaPlugin
 
     // Benötigt für Artifact-Build
     public static void main(String[] args) {
-        System.out.println("ERROR: MAIN CALLED!");
-        Bukkit.getLogger().info("ERROR: MAIN CALLED!");
+        throw new IllegalStateException("ERROR: MAIN CALLED!");
     }
 
     private void createDefaultConfig() {
@@ -62,8 +62,8 @@ public class Manager extends JavaPlugin
             try {
                 config.addDefault(getConfigEntryPath(JSON_PLUGIN_KEY, pluginEntry.getKey().getName()), pluginEntry.getValue());
             } catch(Exception e) {
-                Bukkit.getLogger().warning(e.getMessage());
-                Bukkit.getLogger().info(getConfigEntryPath(JSON_PLUGIN_KEY, pluginEntry.getKey().getName()));
+                sendWarningMessage(MESSAGE_PREFIX ,e.getMessage());
+                sendInfoMessage(MESSAGE_PREFIX, getConfigEntryPath(JSON_PLUGIN_KEY, pluginEntry.getKey().getName()));
             }
         }
 
@@ -80,7 +80,7 @@ public class Manager extends JavaPlugin
         this.plugins.put(new EasyFarming(), true);
         this.plugins.put(new Timber(), true);
         this.plugins.put(new HomeManager(), true);
-        this.plugins.put(new BlockLoggerManager(), true);
+        this.plugins.put(new BlockLoggerManager(), false);
         this.plugins.put(new Messages(), true);
         this.plugins.put(new PingManager(), true);
         this.plugins.put(new VillagerCreatorManager(), true);
@@ -105,7 +105,7 @@ public class Manager extends JavaPlugin
         }
         this.plugins.putAll(newPlugins);
 
-        sendInfoMessage(MESSAGE_PREFIX, "All plugins enabled");
+        sendInfoMessage(MESSAGE_PREFIX, "Plugins enabled");
     }
 
     @Override
@@ -123,7 +123,7 @@ public class Manager extends JavaPlugin
         try {
             this.getConfig().save("config.yml");
         } catch(Exception e) {
-            Bukkit.getLogger().warning(e.getMessage());
+            sendWarningMessage(MESSAGE_PREFIX, e.getMessage());
         }
     }
 
@@ -171,10 +171,6 @@ public class Manager extends JavaPlugin
             finalPath.append(".");
         }
         return finalPath.substring(0, finalPath.toString().length() - 1);
-    }
-
-    public static long convertSecondsToTicks(double seconds) {
-        return (long) (seconds * (double) Bukkit.getServerTickManager().getTickRate());
     }
 
     public Object getConfigEntry(String... path) {

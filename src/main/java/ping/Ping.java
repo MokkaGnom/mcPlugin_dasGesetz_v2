@@ -23,7 +23,7 @@ public class Ping
         this.block = HelperFunctions.getRelativeBlocks(block, Material.AIR).getFirst();
         this.effectCloud = (AreaEffectCloud) this.block.getWorld().spawnEntity(this.block.getLocation(), EntityType.AREA_EFFECT_CLOUD);
         this.effectCloud.setColor(Objects.requireNonNullElse(PingManager.getColorFromHexString(colorHex), DEFAULT_COLOR));
-        this.effectCloud.setDuration((int) Manager.convertSecondsToTicks(time / 1000.d));
+        this.effectCloud.setDuration((int) HelperFunctions.convertSecondsToTicks(time / 1000.d));
         this.effectCloud.setCustomName(String.format(
                 (playerName.substring(playerName.length() - 1).equalsIgnoreCase("s") ? PING_NAME_FORMAT_2 : PING_NAME_FORMAT),
                 playerName));

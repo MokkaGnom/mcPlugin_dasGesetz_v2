@@ -1,6 +1,7 @@
 package utility;
 
 import manager.ManagedPlugin;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -65,5 +66,9 @@ public interface HelperFunctions
 
     static boolean isArgumentTrue(String argument) {
         return !(ManagedPlugin.ENABLE_STRINGS.stream().filter(s -> s.equalsIgnoreCase(argument)).toList().isEmpty());
+    }
+
+    static long convertSecondsToTicks(double seconds) {
+        return (long) (seconds * (double) Bukkit.getServerTickManager().getTickRate());
     }
 }

@@ -30,6 +30,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import utility.ErrorMessage;
+import utility.HelperFunctions;
 
 import java.util.*;
 
@@ -70,7 +71,7 @@ public class DeathChestManager implements Listener, ManagedPlugin
         List<DeathChest> chests = Objects.requireNonNullElse(deathChests.get(player.getUniqueId()), new ArrayList<>());
         DeathChest chest = new DeathChest(player, items);
         chest.setTaskID(Bukkit.getScheduler().runTaskLater(
-                Manager.getInstance(), () -> removeDeathChest(chest, false, false), Manager.convertSecondsToTicks(timer)
+                Manager.getInstance(), () -> removeDeathChest(chest, false, false), HelperFunctions.convertSecondsToTicks(timer)
         ).getTaskId());
         chests.add(chest);
         deathChests.put(player.getUniqueId(), chests);
