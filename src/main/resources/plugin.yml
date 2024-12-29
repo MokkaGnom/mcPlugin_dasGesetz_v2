@@ -3,7 +3,7 @@ name: dasGesetz
 version: 3.7.9
 api-version: 1.21
 author: MokkaGnom
-description: Das Gesetz. Timber, EasyFarming, DeathChest, BlockLock, Home, Ping
+description: Das Gesetz. BlockLock, BlockLogger, Admin-Commands, DeathChest, Timber, EasyFarming, Home, Message-Prefix, Ping, Player-Trophy, Villager/Baby creator
 commands:
   dgManager:
     description: Aktiviert/Deaktiviert das sub-Plugin
@@ -66,7 +66,7 @@ commands:
   villagerCreator:
     description: Zum verwalten von Villager erstellen
     usage: /villagerCreator <remove>
-    permission: dg.createVillagerPermission
+    permission: dg.createVillagerAdminPermission
 permissions:
   dg.dgManagerPermission:
     description: Allows a Player to use the Manager
@@ -110,6 +110,9 @@ permissions:
   dg.createVillagerPermission:
     description: Allows a Player to spawn a Villager by sneaking with another player
     default: true
+  dg.createVillagerAdminPermission:
+    description: Allows a Player to remove custom tags etc. from a created villager
+    default: op
   dg.prefixUsePermission:
     description: Allows a Player to use the prefix commands
     default: true

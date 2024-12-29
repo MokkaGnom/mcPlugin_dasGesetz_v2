@@ -45,8 +45,9 @@ public class Timber implements Listener, ManagedPlugin
     }
 
     //TODO: Testen (vor allem die Zeit überprüfen)
-    public void breakLeaves(Location treeTrunkLocation, Material treeMaterial) {
+    public void breakLeaves(List<Block> treeLogs, Material treeMaterial) {
         long startTime = System.currentTimeMillis();
+        Location treeTrunkLocation = treeLogs.getFirst().getLocation();
         Material leaveMaterial = TIMBER_BLOCK_MATERIAL.get(treeMaterial);
         Location firstLocation = treeTrunkLocation.subtract(BREAK_LEAVES_RADIUS, 0, BREAK_LEAVES_RADIUS);
         Location secondLocation = treeTrunkLocation.add(BREAK_LEAVES_RADIUS, BREAK_LEAVES_HEIGHT, BREAK_LEAVES_RADIUS);
@@ -96,7 +97,7 @@ public class Timber implements Listener, ManagedPlugin
     /**
      * @param firstBlock    First block
      * @param blockMaterial Material to filter blocks
-     * @return A list with all blocks from 'blockMaterial' which are connected to 'firstBlock'
+     * @return A list with all blocks from 'blockMaterial' which are above 'firstBlock'
      */
     public List<Block> getBlockList(Block firstBlock, Material blockMaterial) {
         List<Block> blockList = new ArrayList<>();
@@ -147,9 +148,9 @@ public class Timber implements Listener, ManagedPlugin
         // Breaking tree
         if(TIMBER_BLOCK_MATERIAL.containsKey(block.getType())
                 && TIMBER_TOOL_MATERIAL.contains(player.getInventory().getItemInMainHand().getType())) {
-            breakWood(block, player);
+            List<Block> logsBroken = breakWood(block, player);
             if(breakLeaves) {
-                Bukkit.getScheduler().runTaskAsynchronously(Manager.getInstance(), () -> breakLeaves(block.getLocation(), blockMaterial));
+                Bukkit.getScheduler().runTaskAsynchronously(Manager.getInstance(), () -> breakLeaves(logsBroken, blockMaterial));
             }
         }
     }
