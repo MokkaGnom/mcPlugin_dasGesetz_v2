@@ -1,6 +1,6 @@
 main: manager.Manager
 name: dasGesetz
-version: 3.7.9
+version: 3.8.0
 api-version: 1.21
 author: MokkaGnom
 description: Das Gesetz. BlockLock, BlockLogger, Admin-Commands, DeathChest, Timber, EasyFarming, Home, Message-Prefix, Ping, Player-Trophy, Villager/Baby creator
@@ -67,6 +67,10 @@ commands:
     description: Zum verwalten von Villager erstellen
     usage: /villagerCreator <remove>
     permission: dg.createVillagerAdminPermission
+  getPing:
+    description: Gibt den ping in ms zurück
+    usage: /getPing
+    permission: dg.getPingPermission
 permissions:
   dg.dgManagerPermission:
     description: Allows a Player to use the Manager
@@ -121,4 +125,7 @@ permissions:
     default: op
   dg.playerTrophyPermission:
     description: Allows a Player to drop their head when killed by another player
+    default: true
+  dg.getPingPermission:
+    description: Allows a player to use the getPing command
     default: true

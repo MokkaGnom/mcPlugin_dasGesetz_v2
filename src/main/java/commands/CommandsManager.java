@@ -14,7 +14,8 @@ public class CommandsManager implements ManagedPlugin
     private final Map<String, TabExecutor> executors = Map.of(
             Coords.COMMAND, new Coords(),
             WeatherClear.COMMAND, new WeatherClear(),
-            DasGesetz.COMMAND, new DasGesetz()
+            DasGesetz.COMMAND, new DasGesetz(),
+            GetPing.COMMAND, new GetPing()
     );
 
     private static CommandsManager instance;
@@ -46,6 +47,9 @@ public class CommandsManager implements ManagedPlugin
         }
         else if(supervisedClass == WeatherClear.class) {
             return permissible.hasPermission("dg.weatherClearPermission");
+        }
+        else if(supervisedClass == GetPing.class) {
+            return permissible.hasPermission("dg.getPingPermission");
         }
         return hasDefaultUsePermission(permissible);
     }
