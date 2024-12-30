@@ -4,31 +4,53 @@ import org.bukkit.entity.Player;
 
 public class PlayerSneakInfo
 {
-    private final Player player1;
-    private final Player player2;
-    private final Long startTime;
+    private final Player main;
+    private final Player other;
+    private long startTime;
     private int sneakCount;
 
-    public PlayerSneakInfo(Player player1, Player player2, Long startTime) {
-        this.player1 = player1;
-        this.player2 = player2;
+    public PlayerSneakInfo(Player main, Player other, Long startTime) {
+        this.main = main;
+        this.other = other;
         this.startTime = startTime;
     }
 
-    public Player getPlayer1() {
-        return player1;
+    @Override
+    public String toString() {
+        return "PlayerSneakInfo{" +
+                "main=" + main.getUniqueId() + ": " + main.getName() +
+                ", other=" + other.getUniqueId() + ": " + other.getName() +
+                ", startTime=" + startTime +
+                ", sneakCount=" + sneakCount +
+                '}';
     }
 
-    public Player getPlayer2() {
-        return player2;
+    public Player getMain() {
+        return main;
     }
 
-    public Long getStartTime() {
+    public Player getOther() {
+        return other;
+    }
+
+    public long getStartTime() {
         return startTime;
     }
 
     public int getSneakCount() {
         return sneakCount;
+    }
+
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
+    }
+
+    public void setStartTime() {
+        setStartTime(System.currentTimeMillis());
+    }
+
+    public void setSneakCount(int sneakCount) {
+        this.sneakCount = sneakCount;
     }
 
     public int incrementSneakCount() {

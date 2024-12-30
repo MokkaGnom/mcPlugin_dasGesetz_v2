@@ -33,6 +33,10 @@ public class VillagerCreatorCommands implements TabExecutor
             vcManager.sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
             return true;
         }
+        if(!vcManager.hasAdminPermission(sender)){
+            vcManager.sendMessage(sender, ErrorMessage.NO_PERMISSION.message());
+            return true;
+        }
 
         if(args.length == 1) {
             if(args[0].equalsIgnoreCase(CommandStrings.REMOVE)) {
@@ -43,6 +47,10 @@ public class VillagerCreatorCommands implements TabExecutor
                 else {
                     vcManager.sendMessage(sender, "Invalid target");
                 }
+                return true;
+            }
+            else if(args[0].equalsIgnoreCase("test")){
+
                 return true;
             }
         }

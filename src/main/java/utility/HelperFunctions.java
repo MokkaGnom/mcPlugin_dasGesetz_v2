@@ -1,6 +1,7 @@
 package utility;
 
 import manager.ManagedPlugin;
+import manager.Manager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -11,10 +12,11 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.util.*;
 
 public interface HelperFunctions
 {
@@ -69,7 +71,28 @@ public interface HelperFunctions
         return !(ManagedPlugin.ENABLE_STRINGS.stream().filter(s -> s.equalsIgnoreCase(argument)).toList().isEmpty());
     }
 
+    static long convertMillisecondsToTicks(long milliseconds) {
+        return convertSecondsToTicks((double) milliseconds / 1000);
+    }
+
     static long convertSecondsToTicks(double seconds) {
         return (long) (seconds * (double) Bukkit.getServerTickManager().getTickRate());
+    }
+
+    static List<String> getFromCSVFile(String filePath) {
+        File file = new File(filePath);
+        List<String> values = new ArrayList<>();
+        if(!file.exists())
+            return values;
+
+        try(BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while((line = reader.readLine()) != null) {
+                values.addAll(Arrays.asList(line.split(";")));
+            }
+        } catch(Exception e) {
+            Manager.getInstance().sendWarningMessage("getFromCSVFile", "Error while reading file \"" + filePath + "\": " + e.getMessage());
+        }
+        return values;
     }
 }
