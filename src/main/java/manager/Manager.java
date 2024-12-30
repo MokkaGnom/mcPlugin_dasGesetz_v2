@@ -17,9 +17,7 @@ import playerTrophy.PlayerTrophyManager;
 import villagerCreator.VillagerCreatorManager;
 import ping.PingManager;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Main-Class
@@ -27,9 +25,11 @@ import java.util.Map;
 public class Manager extends JavaPlugin
 {
     private static final String JSON_PLUGIN_KEY = "Manager";
+    private static final String LOCALE_JSON_KEY = "Language";
     private static final String MESSAGE_PREFIX = String.format(ManagedPlugin.MESSAGE_PREFIX, "DG-Manager");
     private static Manager instance = null;
 
+    private Locale locale;
     private final ManagerCommands managerCommands;
     private final ManagerEvents managerEvents;
     private final Map<ManagedPlugin, Boolean> plugins;
@@ -43,6 +43,7 @@ public class Manager extends JavaPlugin
         this.managerCommands = new ManagerCommands();
         this.managerEvents = new ManagerEvents();
         this.plugins = new HashMap<>();
+        this.locale = Locale.ENGLISH;
     }
 
     public static Manager getInstance() {
@@ -92,6 +93,9 @@ public class Manager extends JavaPlugin
         managerCommands.onEnable();
         managerEvents.onEnable();
         createDefaultConfig();
+
+        String key = Objects.requireNonNullElse(this.getConfig().getString(LOCALE_JSON_KEY),"de");
+        this.locale = Locale.forLanguageTag(key);
 
         Map<ManagedPlugin, Boolean> newPlugins = new HashMap<>();
         for(Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet()) {
@@ -186,6 +190,10 @@ public class Manager extends JavaPlugin
             return true;
         }
         return false;
+    }
+
+    public Locale getLocale() {
+        return locale;
     }
 
     public void sendErrorMessage(String prefix, String message) {
