@@ -89,9 +89,4 @@ public class CommandsManager implements ManagedPlugin
     public ChatColor getMessageColor() {
         return ManagedPlugin.DEFAULT_CHAT_COLOR;
     }
-
-    @Override
-    public int getObjectCount() {
-        return 1 + executors.size();
-    }
 }

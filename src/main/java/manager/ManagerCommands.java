@@ -1,20 +1,13 @@
 package manager;
 
-import manager.performance.PerformanceTracker;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
-import org.bukkit.damage.DamageSource;
-import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Player;
-import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.inventory.ItemStack;
-import playerTrophy.PlayerTrophyManager;
 import utility.ErrorMessage;
 import utility.HelperFunctions;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,9 +19,8 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
         String ROOT = "dgManager";
         String MANAGE = "Manage";
         String PERMISSION = "Permission";
-        String PERFORMANCE = "Performance";
 
-        List<String> FIRST_ARGUMENT = List.of(MANAGE, PERMISSION, PERFORMANCE);
+        List<String> FIRST_ARGUMENT = List.of(MANAGE, PERMISSION);
         List<String> SECOND_ARGUMENT = null;
         List<String> THIRD_ARGUMENT = Stream.concat(DISABLE_STRINGS.stream(), ENABLE_STRINGS.stream()).collect(Collectors.toList());
     }
@@ -44,14 +36,8 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
         }
 
         if(args.length == 1) {
-            if(args[0].equalsIgnoreCase(CommandStrings.PERFORMANCE)) {
-                sendMessage(sender, PerformanceTracker.INSTANCE.getObjectCountAsStringOutput(PerformanceTracker.INSTANCE.getPerformancePlugins(Manager.getInstance().getSubPlugins().keySet())));
-                return true;
-            }
-            else {
-                sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
-                return false;
-            }
+            sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
+            return false;
         }
         else if(args.length == 3) {
             if(args[0].equalsIgnoreCase(CommandStrings.MANAGE)) {

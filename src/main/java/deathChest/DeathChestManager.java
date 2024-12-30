@@ -322,9 +322,4 @@ public class DeathChestManager implements Listener, ManagedPlugin
     public boolean isDropItems() {
         return dropItems;
     }
-
-    @Override
-    public int getObjectCount() {
-        return deathChests.keySet().size() + deathChests.values().size();
-    }
 }

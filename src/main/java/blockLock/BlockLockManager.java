@@ -55,15 +55,6 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
 
     public static final int MAX_LOCAL_FRIENDS = 54;
 
-    @Override
-    public int getObjectCount() {
-        return 4 +
-                blockLocks.keySet().size() +
-                blockLocks.values().size() +
-                globalFriends.keySet().size() +
-                globalFriends.values().size();
-    }
-
     public interface META_DATA
     {
         String SHOW_SNEAK_MENU = "blockLockShowSneakMenu";

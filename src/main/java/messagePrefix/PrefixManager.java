@@ -300,9 +300,4 @@ public class PrefixManager implements Listener, ManagedPlugin, Saveable
     public List<String> getPermissions() {
         return List.of("dg.prefixUsePermission", "dg.prefixAdminPermission");
     }
-
-    @Override
-    public int getObjectCount() {
-        return 2 + prefixes.size() + offlinePrefixes.size();
-    }
 }

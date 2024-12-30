@@ -16,11 +16,6 @@ import java.util.*;
 
 public class HomeManager implements ManagedPlugin, Saveable
 {
-    @Override
-    public int getObjectCount() {
-        return 1 + homes.keySet().size() + homes.values().size();
-    }
-
     public interface HomeConstants
     {
         String ERROR_HOME_EXISTS = "Home \"%s\" already exists";
