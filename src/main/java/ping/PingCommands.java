@@ -32,20 +32,26 @@ public class PingCommands implements TabExecutor
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(!(sender instanceof Player)) {
+        if(!(sender instanceof Player player)) {
             sender.sendMessage(ErrorMessage.NOT_A_PLAYER.message());
             return true;
         }
 
         if(!pm.hasDefaultUsePermission(sender)) {
-            sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
+            pm.sendMessage(sender, ErrorMessage.NO_PERMISSION.message());
             return true;
         }
 
-        if(args.length == 2 && args[0].equalsIgnoreCase(CommandStrings.SET) && args[1].length() == 6) {
+        if(args.length == 0) {
+            if(!pm.handlePingEvent(player)) {
+                pm.sendMessage(player, "On cooldown. Please wait for " + (pm.getCooldown(player) / 1000) + "s.");
+            }
+            return true;
+        }
+        else if(args.length == 2 && args[0].equalsIgnoreCase(CommandStrings.SET) && args[1].length() == 6) {
             Color color = PingManager.getColorFromHexString(args[1]);
             if(color != null) {
-                pm.setPlayerColor((Player) sender, args[1]);
+                pm.setPlayerColor(player, args[1]);
                 pm.sendMessage(sender, ChatColor.of("#" + args[1]) + SUCCESSFULLY_CHANGED_COLOR);
                 return true;
             }

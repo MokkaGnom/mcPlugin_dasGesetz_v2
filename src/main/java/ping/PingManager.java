@@ -81,11 +81,8 @@ public class PingManager implements Listener, ManagedPlugin
         }
     }
 
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player p = event.getPlayer();
-        if(hasDefaultUsePermission(p) && checkCooldown(p) && p.getInventory().getItemInOffHand().getType().equals(PING_ITEM_MATERIAL)
-                && (event.getAction().equals(Action.RIGHT_CLICK_AIR) || event.getAction().equals(Action.RIGHT_CLICK_BLOCK))) {
+    public boolean handlePingEvent(Player p) {
+        if(hasDefaultUsePermission(p) && checkCooldown(p)) {
             Block b = p.getTargetBlock(null, 255);
             String color = null;
             if(p.hasMetadata(COLOR_META_KEY))
@@ -94,6 +91,17 @@ public class PingManager implements Listener, ManagedPlugin
             p.removeMetadata(COOLDOWN_META_KEY, Manager.getInstance());
             p.setMetadata(COOLDOWN_META_KEY, new FixedMetadataValue(Manager.getInstance(), System.currentTimeMillis()));
             sendMessage(p, String.format(PING_MESSAGE_FORMAT, b.getX(), b.getY(), b.getZ()));
+            return true;
+        }
+        return false;
+    }
+
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player p = event.getPlayer();
+        if(p.getInventory().getItemInOffHand().getType().equals(PING_ITEM_MATERIAL)
+                && (event.getAction().equals(Action.RIGHT_CLICK_AIR) || event.getAction().equals(Action.RIGHT_CLICK_BLOCK))) {
+            handlePingEvent(p);
         }
     }
 
@@ -102,6 +110,13 @@ public class PingManager implements Listener, ManagedPlugin
             p.removeMetadata(COLOR_META_KEY, Manager.getInstance());
 
         p.setMetadata(COLOR_META_KEY, new FixedMetadataValue(Manager.getInstance(), color));
+    }
+
+    public int getCooldown(Player p) {
+        if(p.hasMetadata(COOLDOWN_META_KEY)) {
+            return getCooldown() - ((int) (System.currentTimeMillis() - p.getMetadata(COOLDOWN_META_KEY).getFirst().asLong()));
+        }
+        return 0;
     }
 
     public boolean checkCooldown(Player p) {
