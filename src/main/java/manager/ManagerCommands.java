@@ -1,5 +1,6 @@
 package manager;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -19,10 +20,11 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
         String ROOT = "dgManager";
         String MANAGE = "Manage";
         String PERMISSION = "Permission";
+        String SET_CONFIG = "SetConfig";
+        String GET_CONFIG = "GetConfig";
 
-        List<String> FIRST_ARGUMENT = List.of(MANAGE, PERMISSION);
-        List<String> SECOND_ARGUMENT = null;
-        List<String> THIRD_ARGUMENT = Stream.concat(DISABLE_STRINGS.stream(), ENABLE_STRINGS.stream()).collect(Collectors.toList());
+        List<String> FIRST_ARGUMENT = List.of(MANAGE, PERMISSION, SET_CONFIG, GET_CONFIG);
+        List<String> ENABLE_DISABLE_STRINGS = Stream.concat(DISABLE_STRINGS.stream(), ENABLE_STRINGS.stream()).collect(Collectors.toList());
     }
 
     public ManagerCommands() {
@@ -38,6 +40,16 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
         if(args.length == 1) {
             sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
             return false;
+        }
+        else if(args.length == 2) {
+            if(args[0].equalsIgnoreCase(CommandStrings.GET_CONFIG)) {
+                sendMessage(sender, Manager.getInstance().getConfigEntry(args[1]).toString());
+                return true;
+            }
+            else {
+                sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
+                return false;
+            }
         }
         else if(args.length == 3) {
             if(args[0].equalsIgnoreCase(CommandStrings.MANAGE)) {
@@ -59,22 +71,41 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
                 }
                 return true;
             }
-            else if(args[0].equalsIgnoreCase(CommandStrings.PERMISSION)) {
+            else if(args[0].equalsIgnoreCase(CommandStrings.SET_CONFIG)) {
+                sendMessage(sender, (
+                        Manager.getInstance().setConfigEntry(args[1], args[2]) ?
+                                "Successful!" : "Path not found!"
+                ));
+                return true;
+            }
+            else {
+                sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
+                return false;
+            }
+        }
+        else if(args.length == 4) {
+            if(args[0].equalsIgnoreCase(CommandStrings.PERMISSION)) {
                 String permission = Manager.getInstance().getPermissions().stream()
                         .filter(s -> s.equalsIgnoreCase(args[1]))
                         .findFirst().orElse(null);
                 if(permission != null) {
-                    if(HelperFunctions.isArgumentTrue(args[2])) {
-                        Manager.getInstance().addPermissionToUser(player, permission);
-                        sendMessage(sender, String.format("Permission \"%s\" added to \"%s\"", permission, player.getName()));
+                    Player p = Bukkit.getPlayer(args[2]);
+                    if(p != null) {
+                        if(HelperFunctions.isArgumentTrue(args[3])) {
+                            Manager.getInstance().addPermissionToUser(p, permission);
+                            sendMessage(sender, String.format("Permission \"%s\" added to \"%s\"", permission, p.getName()));
+                        }
+                        else {
+                            Manager.getInstance().removePermissionFromUser(p, permission);
+                            sendMessage(sender, String.format("Permission \"%s\" removed from \"%s\"", permission, p.getName()));
+                        }
                     }
                     else {
-                        Manager.getInstance().removePermissionFromUser(player, permission);
-                        sendMessage(sender, String.format("Permission \"%s\" removed from \"%s\"", permission, player.getName()));
+                        sendMessage(sender, "Unknown player!");
                     }
                 }
                 else {
-                    sendMessage(sender, "Unknown Permission!");
+                    sendMessage(sender, "Unknown permission!");
                 }
                 return true;
             }
@@ -101,9 +132,20 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
             else if(args[0].equalsIgnoreCase(CommandStrings.PERMISSION)) {
                 return Manager.getInstance().getPermissions();
             }
+            else if(args[0].equalsIgnoreCase(CommandStrings.GET_CONFIG) || args[0].equalsIgnoreCase(CommandStrings.SET_CONFIG)) {
+                return Manager.getInstance().getConfig().getKeys(true).stream().toList();
+            }
         }
         else if(args.length == 3) {
-            return CommandStrings.THIRD_ARGUMENT;
+            if(args[0].equalsIgnoreCase(CommandStrings.PERMISSION)) {
+                return null;
+            }
+            return CommandStrings.ENABLE_DISABLE_STRINGS;
+        }
+        else if(args.length == 4) {
+            if(args[0].equalsIgnoreCase(CommandStrings.PERMISSION)) {
+                return CommandStrings.ENABLE_DISABLE_STRINGS;
+            }
         }
         return ErrorMessage.COMMAND_NO_OPTION_AVAILABLE;
     }

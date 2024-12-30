@@ -119,9 +119,8 @@ public class Manager extends JavaPlugin
             }
         }
 
-        //TODO: Richtig so?
         try {
-            this.getConfig().save("config.yml");
+            this.saveConfig();
         } catch(Exception e) {
             sendWarningMessage(MESSAGE_PREFIX, e.getMessage());
         }
@@ -179,6 +178,14 @@ public class Manager extends JavaPlugin
 
     public Object getConfigEntry(String path) {
         return this.getConfig().get(path);
+    }
+
+    public boolean setConfigEntry(String path, Object value){
+        if(this.getConfigEntry(path) != null){
+            getConfig().set(path, value);
+            return true;
+        }
+        return false;
     }
 
     public void sendErrorMessage(String prefix, String message) {
