@@ -3,15 +3,18 @@ package commands;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Player;
 import utility.ErrorMessage;
 
 import java.util.ArrayList;
 import java.util.List;
 
+//TODO: Rework
 public class DasGesetz implements TabExecutor
 {
     public static final String COMMAND = "dasGesetz";
 
+    //TODO: Read from file
     private String[] dasGesetzStr = {"(1) Die Würde eines Spielers ist unantastbar.\n",
             "(2) Niemand darf einen anderen Spieler, ohne ausdrückliche Erlaubnis des betroffenen oder des Gerichtes, töten.\n",
             "(3) Niemand darf das Haus einer anderen Person anzünden oder sprengen, weder mit TNT, noch durch einen Creeper (siehe Artikel 4).\n",
@@ -59,15 +62,19 @@ public class DasGesetz implements TabExecutor
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if(!(sender instanceof Player player)) {
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.getMessage());
+            return true;
+        }
 
         if(!CommandsManager.getInstance().hasDefaultUsePermission(sender, this.getClass())) {
-            sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
+            CommandsManager.getInstance().sendMessage(player, ErrorMessage.NO_PERMISSION);
             return true;
         }
 
         if(args.length == 0) {
             for(String s : dasGesetzStr) {
-                sender.sendMessage(s);
+                CommandsManager.getInstance().sendMessageDirect(player, s);
             }
             return true;
         }
@@ -76,14 +83,14 @@ public class DasGesetz implements TabExecutor
             try {
                 index += Integer.parseInt(args[0]);
             } catch(NumberFormatException e) {
-                sender.sendMessage("Error: Not a number!");
+                CommandsManager.getInstance().sendMessageDirect(player, e.getLocalizedMessage());
                 return false;
             }
-            sender.sendMessage(getGesetz(index));
+            CommandsManager.getInstance().sendMessageDirect(player, getGesetz(index));
             return true;
         }
         else {
-            sender.sendMessage(ErrorMessage.UNKNOWN_SYNTAX.message());
+            CommandsManager.getInstance().sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
             return false;
         }
     }

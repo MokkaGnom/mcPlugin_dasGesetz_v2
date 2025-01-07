@@ -1,17 +1,39 @@
 package utility;
 
-import java.util.List;
+import manager.language.LocalizedString;
 
-public record ErrorMessage(String message)
+import java.util.*;
+
+public enum ErrorMessage
 {
+    UNKNOWN_ERROR("Unknown error!"),
+    UNKNOWN_SYNTAX("Unknown Syntax!"),
+    UNKNOWN_ARGUMENT("Unknown Argument!"),
+    UNKNOWN_PLUGIN("Unknown Plugin!"),
+    NO_PERMISSION("No Permission!"),
+    NOT_A_PLAYER("You are not a player!"),
+    PLAYER_NOT_FOUND("Player not found!"),
+    EMPTY_LIST("Empty List!");
+
+    ErrorMessage(String message) {
+        this.message = message;
+        this.localizedMessage = new LocalizedString(Map.of(Locale.ENGLISH, message));
+    }
+
     public static final List<String> COMMAND_NO_OPTION_AVAILABLE = List.of("");
-    public static final ErrorMessage NO_ERROR = new ErrorMessage("Success!");
-    public static final ErrorMessage EMPTY_LIST = new ErrorMessage("Empty List!");
-    public static final ErrorMessage NOT_A_PLAYER = new ErrorMessage("You are not a player!");
-    public static final ErrorMessage UNKNOWN_PLUGIN = new ErrorMessage("Unknown Plugin!");
-    public static final ErrorMessage UNKNOWN_SYNTAX = new ErrorMessage("Unknown Syntax!");
-    public static final ErrorMessage UNKNOWN_ARGUMENT = new ErrorMessage("Unknown Argument!");
-    public static final ErrorMessage NO_PERMISSION = new ErrorMessage("No Permission!");
-    public static final ErrorMessage PLAYER_NOT_FOUND = new ErrorMessage("Player not found!");
-    public static final ErrorMessage UNIVERSAL_ERROR = new ErrorMessage("Error: %s");
+
+    private final String message;
+    private LocalizedString localizedMessage;
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setLocalizedString(LocalizedString localizedMessage) {
+        this.localizedMessage = localizedMessage;
+    }
+
+    public LocalizedString getLocalizedMessage() {
+        return this.localizedMessage;
+    }
 }

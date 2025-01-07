@@ -1,5 +1,6 @@
 package blockLock;
 
+import manager.ManagedPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
@@ -14,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 public class BlockLockCommands implements TabExecutor
 {
@@ -38,6 +40,12 @@ public class BlockLockCommands implements TabExecutor
         this.blManager = blManager;
     }
 
+    private void listFriends(Player player, Set<UUID> friendsList) {
+        for(UUID uuid : friendsList) {
+            blManager.sendMessageFormat(player, "listFriends", Bukkit.getOfflinePlayer(uuid).getName(), uuid.toString());
+        }
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         Player player = (Player) sender;
@@ -46,7 +54,7 @@ public class BlockLockCommands implements TabExecutor
         if(args.length == 1) // lock/unlock/listFriends
         {
             if(args[0].equalsIgnoreCase("test") && blManager.hasAdminPermission(sender)) {
-                blManager.sendMessage(player, BlockLock.getBlockLockMeta(block));
+                blManager.sendMessageFormat(player, "direct", BlockLock.getBlockLockMeta(block));
                 return true;
             }
 
@@ -63,14 +71,14 @@ public class BlockLockCommands implements TabExecutor
                 }
 
                 if(friendsList.isEmpty()) {
-                    blManager.sendMessage(sender, "No friends");
+                    blManager.sendMessage(player, "noFriends");
                 }
                 else {
-                    blManager.sendMessage(sender, friendsList.stream().map(UUID::toString).toList());
+                    listFriends(player, friendsList);
                 }
             }
             else {
-                blManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX.message());
+                blManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
                 return false;
             }
             return true;
@@ -81,9 +89,9 @@ public class BlockLockCommands implements TabExecutor
                 boolean bool = HelperFunctions.isArgumentTrue(args[1]);
                 blManager.setShowSneakMenu(player, bool);
                 if(bool)
-                    blManager.sendMessage(player, "Menu active");
+                    blManager.sendMessage(player, "menuActive");
                 else
-                    blManager.sendMessage(player, "Menu inactive");
+                    blManager.sendMessage(player, "menuInactive");
                 return true;
             }
 
@@ -103,40 +111,40 @@ public class BlockLockCommands implements TabExecutor
 
                 if(args[0].equalsIgnoreCase(CommandStrings.ADD_FRIEND)) {
                     if(blManager.addLocalFriend(player.getUniqueId(), block, friend))
-                        blManager.sendMessage(player, friendName + " added (local)");
+                        blManager.sendMessageFormat(player, "addLocalFriend", friendName);
                     else
-                        blManager.sendMessage(player, "Couldn't add (local) " + friendName);
+                        blManager.sendMessageFormat(player, "addLocalFriendFailed", friendName);
                 }
                 else if(args[0].equalsIgnoreCase(CommandStrings.REMOVE_FRIEND)) {
                     if(blManager.removeLocalFriend(player.getUniqueId(), block, friend))
-                        blManager.sendMessage(player, friendName + " removed (local)");
+                        blManager.sendMessageFormat(player, "removeLocalFriend", friendName);
                     else
-                        blManager.sendMessage(player, "Couldn't remove (local) " + friendName);
+                        blManager.sendMessageFormat(player, "removeLocalFriendFailed", friendName);
                 }
                 else if(args[0].equalsIgnoreCase(CommandStrings.ADD_GLOBAL_FRIEND)) {
                     if(blManager.addGlobalFriend(player.getUniqueId(), friend))
-                        blManager.sendMessage(player, friendName + " added (global)");
+                        blManager.sendMessageFormat(player, "addGlobalFriend", friendName);
                     else
-                        blManager.sendMessage(player, "Couldn't add (global) " + friendName);
+                        blManager.sendMessageFormat(player, "addGlobalFriendFailed", friendName);
                 }
                 else if(args[0].equalsIgnoreCase(CommandStrings.REMOVE_GLOBAL_FRIEND)) {
                     if(blManager.removeGlobalFriend(player.getUniqueId(), friend))
-                        blManager.sendMessage(player, friendName + " removed (global)");
+                        blManager.sendMessageFormat(player, "removeGlobalFriend", friendName);
                     else
-                        blManager.sendMessage(player, "Couldn't remove (global) " + friendName);
+                        blManager.sendMessageFormat(player, "removeGlobalFriendFailed", friendName);
                 }
                 else {
-                    blManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX.message());
+                    blManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
                     return false;
                 }
             }
             else {
-                blManager.sendMessage(player, "Couldn't find player " + args[1]);
+                blManager.sendMessageFormat(player, "noPlayerFound", args[1]);
             }
             return true;
         }
         else {
-            blManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX.message());
+            blManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
             return false;
         }
     }
@@ -151,7 +159,7 @@ public class BlockLockCommands implements TabExecutor
             return null;
         }
         else if(args.length == 2 && args[0].equalsIgnoreCase(CommandStrings.SHOW_MENU)) {
-            return Arrays.asList("0", "1", "true", "false");
+            return Stream.concat(ManagedPlugin.ENABLE_STRINGS.stream(), ManagedPlugin.DISABLE_STRINGS.stream()).toList();
         }
         return ErrorMessage.COMMAND_NO_OPTION_AVAILABLE;
     }

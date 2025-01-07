@@ -33,18 +33,18 @@ public class PingCommands implements TabExecutor
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(!(sender instanceof Player player)) {
-            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.message());
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.getMessage());
             return true;
         }
 
-        if(!pm.hasDefaultUsePermission(sender)) {
-            pm.sendMessage(sender, ErrorMessage.NO_PERMISSION.message());
+        if(!pm.hasDefaultUsePermission(player)) {
+            pm.sendMessage(player, ErrorMessage.NO_PERMISSION);
             return true;
         }
 
         if(args.length == 0) {
             if(!pm.handlePingEvent(player)) {
-                pm.sendMessage(player, "On cooldown. Please wait for " + (pm.getCooldown(player) / 1000) + "s.");
+                pm.sendMessageFormat(player, "onCooldown", (pm.getCooldown(player) / 1000));
             }
             return true;
         }
@@ -52,13 +52,13 @@ public class PingCommands implements TabExecutor
             Color color = PingManager.getColorFromHexString(args[1]);
             if(color != null) {
                 pm.setPlayerColor(player, args[1]);
-                pm.sendMessage(sender, ChatColor.of("#" + args[1]) + SUCCESSFULLY_CHANGED_COLOR);
+                pm.sendMessageFormat(player, "changed", ChatColor.of("#" + args[1]));
                 return true;
             }
-            sender.sendMessage(ErrorMessage.UNKNOWN_ARGUMENT.message());
+            pm.sendMessage(player, ErrorMessage.UNKNOWN_ARGUMENT);
         }
         else {
-            sender.sendMessage(ErrorMessage.UNKNOWN_SYNTAX.message());
+            pm.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
         }
         return false;
     }

@@ -10,7 +10,6 @@ import org.bukkit.entity.Player;
 import utility.ErrorMessage;
 import utility.HelperFunctions;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -31,8 +30,6 @@ public class PrefixCommands implements TabExecutor
         List<String> FIRST_ARGUMENT_USER = List.of(ADD, REMOVE, LIST);
     }
 
-    public static final String PREFIX_NOT_FOUND = "Prefix nicht gefunden";
-
     private final PrefixManager prefixManager;
 
     public PrefixCommands(PrefixManager prefixManager) {
@@ -42,21 +39,23 @@ public class PrefixCommands implements TabExecutor
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(!(sender instanceof Player player)) {
-            prefixManager.sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.getMessage());
             return false;
         }
 
         if(args.length == 1) {
             if(args[0].equalsIgnoreCase(CommandStrings.LIST)) {
-                prefixManager.sendMessage(sender, prefixManager.getPrefixesAsPreviewStrings(player));
+                for(String s : prefixManager.getPrefixesAsPreviewStrings(player)) {
+                    prefixManager.sendMessageDirect(player, s);
+                }
                 return true;
             }
             else if(args[0].equalsIgnoreCase(CommandStrings.REMOVE)) {
                 if(prefixManager.removePrefixFromPlayer(player)) {
-                    prefixManager.sendMessage(sender, "Prefix entfernt");
+                    prefixManager.sendMessage(player, "removed");
                 }
                 else {
-                    prefixManager.sendMessage(sender, PREFIX_NOT_FOUND);
+                    prefixManager.sendMessage(player, "notFound");
                 }
                 return true;
             }
@@ -64,19 +63,19 @@ public class PrefixCommands implements TabExecutor
         else if(args.length == 2) {
             if(args[0].equalsIgnoreCase(CommandStrings.ADD)) {
                 if(prefixManager.addPrefixToPlayer(player, args[1])) {
-                    prefixManager.sendMessage(sender, "Prefix hinzugefügt");
+                    prefixManager.sendMessage(player, "added");
                 }
                 else {
-                    prefixManager.sendMessage(sender, PREFIX_NOT_FOUND);
+                    prefixManager.sendMessage(player, "notFound");
                 }
                 return true;
             }
             else if(args[0].equalsIgnoreCase(CommandStrings.DELETE) && prefixManager.hasAdminPermission(player)) {
                 if(prefixManager.removePrefix(args[1])) {
-                    prefixManager.sendMessage(sender, "Prefix gelöscht");
+                    prefixManager.sendMessage(player, "deleted");
                 }
                 else {
-                    prefixManager.sendMessage(sender, PREFIX_NOT_FOUND);
+                    prefixManager.sendMessage(player, "notFound");
                 }
                 return true;
             }
@@ -84,10 +83,10 @@ public class PrefixCommands implements TabExecutor
                 Player p = Bukkit.getPlayer(args[1]);
                 if(p != null) {
                     prefixManager.removePrefixFromPlayer(p);
-                    prefixManager.sendMessage(sender, "Removed prefix from " + p.getName());
+                    prefixManager.sendMessageFormat(player, "removedFrom", p.getName());
                 }
                 else {
-                    prefixManager.sendMessage(sender, ErrorMessage.PLAYER_NOT_FOUND.message());
+                    prefixManager.sendMessage(player, ErrorMessage.PLAYER_NOT_FOUND);
                 }
                 return true;
             }
@@ -98,9 +97,11 @@ public class PrefixCommands implements TabExecutor
                 Prefix prefix = prefixManager.getPrefix(args[1]);
                 if(p != null && prefix != null) {
                     prefixManager.addPrefixToPlayer(p, prefix);
+                    prefixManager.sendMessageFormat(player, "addedTo", p.getName());
+                    prefixManager.sendMessageFormat(p, "addedP", prefix.prefix());
                 }
                 else {
-                    prefixManager.sendMessage(sender, "Prefix or Player not found");
+                    prefixManager.sendMessage(player, "notFoundP");
                 }
                 return true;
             }
@@ -109,26 +110,26 @@ public class PrefixCommands implements TabExecutor
             if(args[0].equalsIgnoreCase(CommandStrings.CREATE)) {
                 if(prefixManager.hasAdminPermission(player)) {
                     if(prefixManager.addNewPrefix(args[1], args[2], args[3], HelperFunctions.isArgumentTrue(args[4]))) {
-                        prefixManager.sendMessage(sender, "Prefix erstellt");
+                        prefixManager.sendMessage(player, "created");
                     }
                     else {
-                        prefixManager.sendMessage(sender, PREFIX_NOT_FOUND);
+                        prefixManager.sendMessage(player, "notFound");
                     }
                 }
                 else {
-                    prefixManager.sendMessage(sender, ErrorMessage.NO_PERMISSION.message());
+                    prefixManager.sendMessage(player, ErrorMessage.NO_PERMISSION);
                 }
                 return true;
             }
         }
-        prefixManager.sendMessage(sender, ErrorMessage.UNKNOWN_SYNTAX.message());
+        prefixManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
         return false;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         if(!(sender instanceof Player player)) {
-            return List.of(ErrorMessage.NOT_A_PLAYER.message());
+            return List.of();
         }
 
         if(args.length == 1) {

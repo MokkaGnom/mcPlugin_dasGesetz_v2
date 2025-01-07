@@ -1,0 +1,174 @@
+WelcomeMessages:
+  evening:
+    en: "Wonderful %s evening, %s!"
+    de: "Einen schönen %s Abend, %s!"
+  afternoon:
+    en: "Wonderful %s afternoon, %s!"
+    de: "Einen schönen %s Nachmittag, %s!"
+  noon:
+    en: "Wonderful %s noon, %s!"
+    de: "Einen schönen %s Mittag, %s!"
+  morning:
+    en: "Wonderful %s morning, %s!"
+    de: "Einen schönen %s Morgen, %s!"
+BlockLock:
+  direct:
+    en: "%s"
+  noFriends:
+    en: "No friends"
+    de: "Keine Freunde"
+  menuActive:
+    en: "Menu active"
+    de: "Menü aktiviert"
+  menuInactive:
+    en: "Menu inactive"
+    de: "Menü deaktiviert"
+  listFriends:
+    en: "%s (%s)"
+    de: "%s (%s)"
+  addLocalFriend:
+    en: "%s added (local)"
+    de: "%s hinzugefügt (lokal)"
+  addLocalFriendFailed:
+    en: "Couldn't add %s (local)"
+    de: "%s konnte nicht hinzugefügt werden (lokal)"
+  removeLocalFriend:
+    en: "%s removed (local)"
+  removeLocalFriendFailed:
+    en: "Couldn't remove %s (local)"
+  addGlobalFriend:
+    en: "%s added (global)"
+  addGlobalFriendFailed:
+    en: "Couldn't add %s (global)"
+  removeGlobalFriend:
+    en: "%s removed (global)"
+  removeGlobalFriendFailed:
+    en: "Couldn't remove %s (global)"
+  noPlayerFound:
+    en: "Couldn't find player %s"
+  blockNotSupported:
+    en: "Block not supported!"
+  blockAlreadyLocked:
+    en: "%s is already locked!"
+  blockLocked:
+    en: "%s locked!"
+  blockUnlocked:
+    en: "%s unlocked"
+  blockNotLocked:
+    en: "Block is not locked!"
+BlockLogger:
+  unknownMaterial:
+    en: "Unknown material \"%s\""
+  added:
+    en: "Added \"%s\": %b"
+  removed:
+    en: "Removed \"%s\": %b"
+Commands:
+  playerNotFound:
+    en: "Player \"%s\" not found"
+  coords:
+    en: "Player \"%s\" is at: %s"
+  getPing:
+    en: "%s ms"
+DeathChest:
+  infoForPlayer:
+    en: "Position(X: %s, Y: %s, Z: %s) - TTL(%ss)"
+  created:
+    en: "Created at (X: %s, Y: %s, Z: %s) T: %ss"
+  collected:
+    en: "Collected!"
+  steal:
+    en: "\"%s\" tried to open your DeathChest at: (X: %s, Y: %s, Z: %s)"
+  noDeathChest:
+    en: "Not a DeathChest"
+  noDeathChestsAvailable:
+    en: "No DeathChest available"
+    de: "Keine DeathChests vorhanden"
+Homes:
+  homeExists:
+    en: "Home already exists"
+  homeNotFound:
+    en: "Home not found"
+  maxHomes:
+    en: "Reached maximum amount of homes"
+  noHomes:
+    en: "No homes found"
+  added:
+    en: "Home \"%s\" added"
+  removed:
+    en: "Home \"%s\" removed"
+  tp:
+    en: "Teleported to home \"%s\""
+MessagePrefix:
+  removed:
+    en: "Prefix removed"
+    de: "Prefix entfernt"
+  added:
+    en: "Prefix added"
+    de: "Prefix hinzugefügt"
+  addedP:
+    en: "Prefix \"%s\" added"
+    de: "Prefix \"%s\" hinzugefügt"
+  notFound:
+    en: "Prefix not found"
+    de: "Prefix nicht gefunden"
+  deleted:
+    en: "Prefix deleted"
+    de: "Prefix gelöscht"
+  addedTo:
+    en: "Prefix added to \"%s\""
+  removedFrom:
+    en: "Prefix removed from \"%s\""
+  notFoundP:
+    en: "Player or prefix not found"
+  created:
+    en: "Prefix created"
+    de: "Prefix erstellt"
+ping:
+  pingAt:
+    en: "You pinged at %s, %s, %s"
+  onCooldown:
+    en: "On cooldown. Please wait for %ds"
+  changed:
+    en: "%sSuccessfully changed color"
+villagerCreator:
+  removed:
+    en: "Removed"
+    de: "Entfernt"
+  invalidTarget:
+    en: "Invalid target"
+DG-Manager:
+  pluginEnabled:
+    en: "Plugin \"%s\" was enabled"
+    de: "Plugin \"%s\" wurde aktiviert"
+  pluginDisabled:
+    en: "Plugin \"%s\" was disabled"
+    de: "Plugin \"%s\" wurde deaktiviert"
+  permissionAddedTo:
+    en: "Permission \"%s\" added to \"%s\""
+  permissionRemovedFrom:
+    en: "Permission \"%s\" removed from \"%s\""
+  unknownPermissiom:
+    en: "Unknown permission!"
+    de: "Unbekannte Berechtigung!"
+  setConfigSuccess:
+    en: "Successful!"
+  pathNotFound:
+    en: "Path not found!"
+ErrorMessages:
+  UNKNOWN_ERROR:
+    en: "Unknown error!"
+  UNKNOWN_SYNTAX:
+    en: "Unknown syntax!"
+  UNKNOWN_ARGUMENT:
+    en: "Unknown argument!"
+  UNKNOWN_PLUGIN:
+    en: "Unknown plugin!"
+  NO_PERMISSION:
+    en: "No permission!"
+  NOT_A_PLAYER:
+    en: "You are not a player!"
+  PLAYER_NOT_FOUND:
+    en: "Player not found!"
+  EMPTY_LIST:
+    en: "Empty list!"

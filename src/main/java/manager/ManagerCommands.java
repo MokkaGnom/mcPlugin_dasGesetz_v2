@@ -33,21 +33,21 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(!(sender instanceof Player player)) {
-            sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.getMessage());
             return false;
         }
 
         if(args.length == 1) {
-            sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
+            sendMessage(player, ErrorMessage.UNKNOWN_ARGUMENT);
             return false;
         }
         else if(args.length == 2) {
             if(args[0].equalsIgnoreCase(CommandStrings.GET_CONFIG)) {
-                sendMessage(sender, Manager.getInstance().getConfigEntry(args[1]).toString());
+                sendMessageDirect(player, Manager.getInstance().getConfigEntry(args[1]).toString());
                 return true;
             }
             else {
-                sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
+                sendMessage(player, ErrorMessage.UNKNOWN_ARGUMENT);
                 return false;
             }
         }
@@ -59,27 +59,27 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
                 if(plugin != null) {
                     if(HelperFunctions.isArgumentTrue(args[2])) {
                         Manager.getInstance().enablePlugin(plugin);
-                        sendMessage(sender, String.format("Plugin: \"%s\" wurde aktiviert", plugin.getName()));
+                        sendMessageFormat(player, "pluginEnabled", plugin.getName());
                     }
                     else {
                         Manager.getInstance().disablePlugin(plugin);
-                        sendMessage(sender, String.format("Plugin: \"%s\" wurde deaktiviert", plugin.getName()));
+                        sendMessageFormat(player, "pluginDisabled", plugin.getName());
                     }
                 }
                 else {
-                    sendMessage(sender, "Unknown Plugin!");
+                    sendMessage(player, ErrorMessage.UNKNOWN_PLUGIN);
                 }
                 return true;
             }
             else if(args[0].equalsIgnoreCase(CommandStrings.SET_CONFIG)) {
-                sendMessage(sender, (
+                sendMessage(player, (
                         Manager.getInstance().setConfigEntry(args[1], args[2]) ?
-                                "Successful!" : "Path not found!"
+                                "setConfigSuccess" : "pathNotFound"
                 ));
                 return true;
             }
             else {
-                sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
+                sendMessage(player, ErrorMessage.UNKNOWN_ARGUMENT);
                 return false;
             }
         }
@@ -93,29 +93,29 @@ public class ManagerCommands implements TabExecutor, ManagedPlugin
                     if(p != null) {
                         if(HelperFunctions.isArgumentTrue(args[3])) {
                             Manager.getInstance().addPermissionToUser(p, permission);
-                            sendMessage(sender, String.format("Permission \"%s\" added to \"%s\"", permission, p.getName()));
+                            sendMessageFormat(player, "permissionAddedTo", permission, p.getName());
                         }
                         else {
                             Manager.getInstance().removePermissionFromUser(p, permission);
-                            sendMessage(sender, String.format("Permission \"%s\" removed from \"%s\"", permission, p.getName()));
+                            sendMessageFormat(player, "permissionRemovedFrom", permission, p.getName());
                         }
                     }
                     else {
-                        sendMessage(sender, "Unknown player!");
+                        sendMessage(player, ErrorMessage.PLAYER_NOT_FOUND);
                     }
                 }
                 else {
-                    sendMessage(sender, "Unknown permission!");
+                    sendMessage(player, "unknownPermission");
                 }
                 return true;
             }
             else {
-                sendMessage(sender, ErrorMessage.UNKNOWN_ARGUMENT.message());
+                sendMessage(player, ErrorMessage.UNKNOWN_ARGUMENT);
                 return false;
             }
         }
         else {
-            sendMessage(sender, ErrorMessage.UNKNOWN_SYNTAX.message());
+            sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
             return false;
         }
     }

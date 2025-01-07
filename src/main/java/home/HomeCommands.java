@@ -32,32 +32,47 @@ public class HomeCommands implements TabExecutor
         if(sender instanceof Player player) {
             if(args.length == 1 && args[0].equalsIgnoreCase(CommandStrings.LIST)) {
                 List<String> homeNames = homeManager.getAllHomeNames(player.getUniqueId());
-                homeManager.sendMessage(sender, homeNames.isEmpty() ? List.of(HomeManager.HomeConstants.NO_HOMES_FOUND) : homeNames);
+                if(homeNames.isEmpty()) {
+                    homeManager.sendMessage(player, "noHomes");
+                }
+                else {
+                    for(String homeName : homeNames) {
+                        homeManager.sendMessageDirect(player, homeName);
+                    }
+                }
                 return true;
             }
             else if(args.length == 2) {
                 if(args[0].equalsIgnoreCase(CommandStrings.ADD)) {
-                    ErrorMessage message = homeManager.addHome(player.getUniqueId(), args[1], player.getLocation().getBlock().getLocation());
-                    homeManager.sendMessage(sender, message != ErrorMessage.NO_ERROR ? message.message() : String.format(HomeManager.HomeConstants.HOME_ADDED, args[1]));
+                    switch(homeManager.addHome(player.getUniqueId(), args[1], player.getLocation().getBlock().getLocation())) {
+                        case 0 -> homeManager.sendMessage(player, "added");
+                        case 1 -> homeManager.sendMessage(player, "homeExists");
+                        case 2 -> homeManager.sendMessage(player, "maxHomes");
+                    }
                     return true;
                 }
                 else if(args[0].equalsIgnoreCase(CommandStrings.REMOVE)) {
-                    ErrorMessage message = homeManager.removeHome(player.getUniqueId(), args[1]);
-                    homeManager.sendMessage(sender, message != ErrorMessage.NO_ERROR ? message.message() : String.format(HomeManager.HomeConstants.HOME_REMOVED, args[1]));
+                    switch(homeManager.removeHome(player.getUniqueId(), args[1])) {
+                        case 0 -> homeManager.sendMessage(player, "removed");
+                        case 1 -> homeManager.sendMessage(player, "homeNotFound");
+                        case 2 -> homeManager.sendMessage(player, ErrorMessage.UNKNOWN_ERROR);
+                    }
                     return true;
                 }
                 else if(args[0].equalsIgnoreCase(CommandStrings.TP)) {
-                    ErrorMessage message = homeManager.teleportToHome(player.getUniqueId(), args[1]);
-                    homeManager.sendMessage(sender, message != ErrorMessage.NO_ERROR ? message.message() : String.format(HomeManager.HomeConstants.HOME_TELEPORTED, args[1]));
+                    switch(homeManager.teleportToHome(player.getUniqueId(), args[1])) {
+                        case 0 -> homeManager.sendMessageFormat(player, "tp", args[1]);
+                        case 1 -> homeManager.sendMessage(player, "homeNotFound");
+                    }
                     return true;
                 }
             }
         }
         else {
-            homeManager.sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.getMessage());
             return false;
         }
-        homeManager.sendMessage(sender, ErrorMessage.UNKNOWN_SYNTAX.message());
+        homeManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
         return false;
     }
 
@@ -69,9 +84,6 @@ public class HomeCommands implements TabExecutor
         else if(args.length == 2) {
             if(sender instanceof Player player) {
                 return homeManager.getAllHomeNames(player.getUniqueId());
-            }
-            else {
-                homeManager.sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
             }
         }
         return ErrorMessage.COMMAND_NO_OPTION_AVAILABLE;

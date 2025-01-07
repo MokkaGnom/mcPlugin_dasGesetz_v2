@@ -14,7 +14,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.permissions.Permissible;
 
 import java.util.List;
 
@@ -25,7 +24,6 @@ public class PingManager implements Listener, ManagedPlugin
     public static final String COOLDOWN_META_KEY = "pingTime";
     public static final String COLOR_META_KEY = "pingColor";
     public static final Material PING_ITEM_MATERIAL = Material.STICK;
-    public static final String PING_MESSAGE_FORMAT = "You pinged at %s, %s, %s";
 
     private final int time;
     private final int cooldown;
@@ -90,7 +88,7 @@ public class PingManager implements Listener, ManagedPlugin
             new Ping(b, time, p.getName(), color);
             p.removeMetadata(COOLDOWN_META_KEY, Manager.getInstance());
             p.setMetadata(COOLDOWN_META_KEY, new FixedMetadataValue(Manager.getInstance(), System.currentTimeMillis()));
-            sendMessage(p, String.format(PING_MESSAGE_FORMAT, b.getX(), b.getY(), b.getZ()));
+            sendMessageFormat(p, "pingAt", b.getX(), b.getY(), b.getZ());
             return true;
         }
         return false;

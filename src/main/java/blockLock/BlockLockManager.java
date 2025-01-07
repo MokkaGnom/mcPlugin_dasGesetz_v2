@@ -28,7 +28,7 @@ import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static blockLock.BlockLockConstants.*;
+import static blockLock.BlockLockMessageKeys.*;
 
 //TODO: Das Plugin laggt. Problem ist, dass die Funktionen (selbst die getBlockLock(Block)) Methode zu lange braucht.
 // Es kommt durchaus vor, dass die Funktion 50+ pro Tick aufgerufen wird, ein Tick is aber nur 50ms lang. Da die Funktion aber länger benötigt, dauert der Tick auch länger und dadurch laggt es.
@@ -85,7 +85,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
             }
             else {
                 event.setCancelled(true);
-                sendMessage(player, ErrorMessage.NO_PERMISSION.message());
+                sendMessage(player, ErrorMessage.NO_PERMISSION);
             }
         }
     }
@@ -109,7 +109,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
                 }
             }
             else {
-                sendMessage(player, ErrorMessage.NO_PERMISSION.message());
+                sendMessage(player, ErrorMessage.NO_PERMISSION);
                 event.setCancelled(true);
             }
 
@@ -151,8 +151,8 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
         try {
             saveConfigFile.save(SAVE_FILE);
             saveFriendsConfigFile.save(SAVE_FILE_FRIENDS);
-            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(BLOCKS_SAVED, blockLocks.keySet().size(), savedBlockLocks));
-            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(FRIENDS_SAVED, globalFriends.keySet().size(), savedGlobalFriends));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("BlockLocks saved! (P:%d BL:%d)", blockLocks.keySet().size(), savedBlockLocks));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("BlockLock-Global-Friends saved! (P:%d F:%d)", globalFriends.keySet().size(), savedGlobalFriends));
             return true;
         } catch(Exception e) {
             Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
@@ -184,7 +184,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
                 }
             }
 
-            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(BLOCKS_LOADED, blockLocks.keySet().size(), blockLocksLoaded));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("BlockLocks loaded! (P:%d BL:%d)", blockLocks.keySet().size(), blockLocksLoaded));
             loaded &= true;
         } catch(Exception e) {
             Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
@@ -204,7 +204,7 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
                 this.globalFriends.put(player, friendsList.stream().map(UUID::fromString).collect(Collectors.toSet()));
             }
 
-            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(FRIENDS_LOADED, globalFriends.keySet().size(), globalFriendsLoaded));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("BlockLock-Global-Friends loaded! (P:%d F:%d)", globalFriends.keySet().size(), globalFriendsLoaded));
             loaded &= true;
         } catch(Exception e) {
             Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
@@ -219,21 +219,21 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
             return false;
         }
         if(!hasDefaultUsePermission(player)) {
-            sendMessage(player, ErrorMessage.NO_PERMISSION.message());
+            sendMessage(player, ErrorMessage.NO_PERMISSION);
             return false;
         }
 
         if(!BlockLock.isBlockLock(block)) {
             if(BlockLock.createBlockLock(block, player.getUniqueId(), true) && addBlockLock(block)) {
-                sendMessage(player, String.format(BLOCK_LOCKED, block.getType().toString()));
+                sendMessageFormat(player, BLOCK_LOCKED, block.getType().toString());
                 return true;
             }
             else {
-                sendMessage(player, "ERROR");
+                sendMessageFormat(player, DIRECT, "ERROR");
             }
         }
         else {
-            sendMessage(player, String.format(BLOCK_ALREADY_LOCKED, block.getType().toString()));
+            sendMessageFormat(player, BLOCK_ALREADY_LOCKED, block.getType().toString());
         }
         return false;
     }
@@ -243,15 +243,15 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
             if(hasPermissionToOpen(player, block)) {
                 UUID uuid = player.getUniqueId();
                 removeBlockLock(uuid, block);
-                if(second){
+                if(second) {
                     removeBlockLock(uuid, BlockLock.getSecondBlock(block));
                 }
                 BlockLock.delete(block, second);
-                sendMessage(player, String.format(BLOCK_UNLOCKED, block.getType().name()));
+                sendMessageFormat(player, BLOCK_UNLOCKED, block.getType().name());
                 return true;
             }
             else {
-                sendMessage(player, ErrorMessage.NO_PERMISSION.message());
+                sendMessage(player, ErrorMessage.NO_PERMISSION);
                 return false;
             }
         }
@@ -412,14 +412,14 @@ public class BlockLockManager implements Listener, ManagedPlugin, Saveable
             }
             else {
                 event.setCancelled(true);
-                sendMessage(player, ErrorMessage.NO_PERMISSION.message());
+                sendMessage(player, ErrorMessage.NO_PERMISSION);
             }
         }
         else {
             Block upperBlock = block.getRelative(0, 1, 0);
             if(BlockLock.isBlockLock(upperBlock) && BlockLock.isDoor(upperBlock)) {
                 event.setCancelled(true);
-                sendMessage(player, ErrorMessage.NO_PERMISSION.message());
+                sendMessage(player, ErrorMessage.NO_PERMISSION);
             }
         }
     }

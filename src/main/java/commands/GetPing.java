@@ -15,17 +15,17 @@ public class GetPing implements TabExecutor
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(!CommandsManager.getInstance().hasDefaultUsePermission(sender, this.getClass())) {
-            sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
-            return true;
-        }
-
         if(!(sender instanceof Player player)) {
-            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.message());
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.getMessage());
             return true;
         }
 
-        sender.sendMessage(player.getPing() + "ms");
+        if(!CommandsManager.getInstance().hasDefaultUsePermission(sender, this.getClass())) {
+            CommandsManager.getInstance().sendMessage(player, ErrorMessage.NO_PERMISSION);
+            return true;
+        }
+
+        CommandsManager.getInstance().sendMessageFormat(player, "getPing", player.getPing());
         return true;
     }
 

@@ -1,6 +1,5 @@
 package deathChest;
 
-import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
@@ -34,17 +33,24 @@ public class DeathChestCommands implements TabExecutor
             if(args.length == 1) {
                 if(args[0].equals(CommandStrings.LIST)) {
                     List<String> deathChestList = dcManager.getDeathChests(player.getUniqueId()).stream().map(dcManager::getDeathChestInfoForPlayer).toList();
-                    dcManager.sendMessage(sender, deathChestList.isEmpty() ? List.of("Keine DeathChests vorhanden") : deathChestList);
+                    if(deathChestList.isEmpty()) {
+                        dcManager.sendMessage(player, "noDeathChestsAvailable");
+                    }
+                    else {
+                        for(String s : deathChestList) {
+                            dcManager.sendMessageDirect(player, s);
+                        }
+                    }
                 }
                 else if(args[0].equals(CommandStrings.REMOVE)) {
                     DeathChest dc = dcManager.getDeathChest(HelperFunctions.getTargetBlock(player));
                     if(dc != null) {
-                        if(dc.checkIfOwner(player.getUniqueId()) || dcManager.hasAdminPermission(player)){
+                        if(dc.checkIfOwner(player.getUniqueId()) || dcManager.hasAdminPermission(player)) {
                             dcManager.removeDeathChest(dc, false, true);
                         }
                     }
-                    else{
-                        dcManager.sendMessage(sender, "Not a DeathChest");
+                    else {
+                        dcManager.sendMessage(player, "noDeathChest");
                     }
                 }
                 else if(args[0].equals(CommandStrings.REMOVE_ALL)) {
@@ -55,11 +61,11 @@ public class DeathChestCommands implements TabExecutor
                 return true;
             }
             else {
-                dcManager.sendMessage(sender, ErrorMessage.UNKNOWN_SYNTAX.message());
+                dcManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
             }
         }
         else {
-            dcManager.sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.getMessage());
         }
         return false;
     }

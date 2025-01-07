@@ -8,7 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Player;
@@ -90,9 +89,9 @@ public class DeathChestManager implements Listener, ManagedPlugin
             }
             Player player = Bukkit.getPlayer(chest.getOwner());
             if(player != null) {
-                sendMessage(player, String.format(COLLECTED_PLAYER_MESSAGE));
+                sendMessage(player, COLLECTED_PLAYER_MESSAGE);
             }
-            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(COLLECTED_SERVER_MESSAGE, chest.toString()));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("Collected DeathChest: %s", chest.toString()));
             deathChests.get(chest.getOwner()).remove(chest);
             return true;
         }
@@ -152,12 +151,12 @@ public class DeathChestManager implements Listener, ManagedPlugin
             DeathChest dc = createDeathCest(p, event.getDrops());
             if(dc != null) {
                 event.getDrops().clear();
-                sendMessage(p, String.format(CREATED_PLAYER_MESSAGE, dc.getLocation().getX(), dc.getLocation().getY(), dc.getLocation().getZ(), timer));
-                Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(CREATED_SERVER_MESSAGE, dc.toString()));
+                sendMessageFormat(p, CREATED_PLAYER_MESSAGE, dc.getLocation().getX(), dc.getLocation().getY(), dc.getLocation().getZ(), timer);
+                Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("Created DeathChest: %s", dc.toString()));
             }
         }
         else {
-            sendMessage(p, ERROR_NO_PERMISSION_CREATE);
+            sendMessage(p, ErrorMessage.NO_PERMISSION);
         }
     }
 
@@ -177,9 +176,9 @@ public class DeathChestManager implements Listener, ManagedPlugin
                     }
                 }
                 else {
-                    sendMessage(player, ErrorMessage.NO_PERMISSION.message());
+                    sendMessage(player, ErrorMessage.NO_PERMISSION);
                     if(this.messagePlayer) {
-                        sendMessage(Bukkit.getPlayer(dc.getOwner()), String.format(COLLECT_STEAL_MESSAGE_TO_OWNER, player.getName(), dc.getLocation().getX(), dc.getLocation().getY(), dc.getLocation().getZ()));
+                        sendMessageFormat(Bukkit.getPlayer(dc.getOwner()), COLLECT_STEAL_MESSAGE_TO_OWNER, player.getName(), dc.getLocation().getX(), dc.getLocation().getY(), dc.getLocation().getZ());
                     }
                 }
             }

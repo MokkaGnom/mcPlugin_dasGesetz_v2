@@ -20,28 +20,28 @@ public class Coords implements TabExecutor
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(!CommandsManager.getInstance().hasDefaultUsePermission(sender, this.getClass())) {
-            sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
+        if(!(sender instanceof Player player)) {
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.getMessage());
             return true;
         }
 
-        if(!(sender instanceof Player)) {
-            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.message());
+        if(!CommandsManager.getInstance().hasDefaultUsePermission(sender, this.getClass())) {
+            CommandsManager.getInstance().sendMessage(player, ErrorMessage.NO_PERMISSION);
             return true;
         }
 
         if(args.length == 1) {
             Player p = Bukkit.getPlayer(args[0]);
             if(p == null) {
-                sender.sendMessage("Spieler \"" + args[0] + "\" nicht gefunden.");
+                CommandsManager.getInstance().sendMessageFormat(player, "playerNotFound", args[0]);
             }
             else {
-                sender.sendMessage("Spieler \"" + p.getName() + "\" ist bei:" + p.getLocation().toString());
+                CommandsManager.getInstance().sendMessageFormat(player, "coords", p.getName(), p.getLocation().toString());
             }
             return true;
         }
         else {
-            sender.sendMessage(ErrorMessage.UNKNOWN_SYNTAX.message());
+            CommandsManager.getInstance().sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
             return false;
         }
     }
@@ -49,7 +49,7 @@ public class Coords implements TabExecutor
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         if(args.length == 1) {
-            return null; // Gibt automatische ne Liste mit allen Spielern
+            return null;
         }
         return ErrorMessage.COMMAND_NO_OPTION_AVAILABLE;
     }

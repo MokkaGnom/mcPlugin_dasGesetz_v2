@@ -9,28 +9,12 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import utility.ErrorMessage;
 
 import java.io.File;
 import java.util.*;
 
 public class HomeManager implements ManagedPlugin, Saveable
 {
-    public interface HomeConstants
-    {
-        String ERROR_HOME_EXISTS = "Home \"%s\" already exists";
-        String ERROR_HOME_NOT_FOUND = "Home \"%s\" not found";
-        String ERROR_MAX_HOME_COUNT = "Reached maximum amount of homes";
-        String NO_HOMES_FOUND = "No Homes found";
-
-        String HOME_ADDED = "Home \"%s\" added";
-        String HOME_REMOVED = "Home \"%s\" removed";
-        String HOME_TELEPORTED = "Teleported to home \"%s\"";
-
-        String HOMES_SAVED = "Homes saved! (P:%d H:%d)";
-        String HOMES_LOADED = "Homes loaded! (P:%d H:%d)";
-    }
-
     private static final String MAX_HOMES_JSON_KEY = "Homes.MaxHomes";
 
     public final int MAX_HOMES = Manager.getInstance().getConfig().getInt(MAX_HOMES_JSON_KEY);
@@ -55,33 +39,46 @@ public class HomeManager implements ManagedPlugin, Saveable
         );
     }
 
-    public ErrorMessage addHome(UUID playerUUID, String homeName, Location location) {
+    /**
+     *
+     * @param playerUUID
+     * @param homeName
+     * @param location
+     * @return 0: Success | 1: Already exists | 2: maximum reached
+     */
+    public int addHome(UUID playerUUID, String homeName, Location location) {
         if(getHome(playerUUID, homeName) != null) {
-            return new ErrorMessage(String.format(HomeConstants.ERROR_HOME_EXISTS, homeName));
+            return 1;
         }
         else if(isMaxHomesReached(playerUUID)) {
-            return new ErrorMessage(HomeConstants.ERROR_MAX_HOME_COUNT);
+            return 2;
         }
         else {
             getAllHomes(playerUUID).put(homeName, getTPLocation(location));
-            return ErrorMessage.NO_ERROR;
+            return 0;
         }
     }
 
-    public ErrorMessage removeHome(UUID playerUUID, String homeName) {
+    /**
+     *
+     * @param playerUUID
+     * @param homeName
+     * @return 0: Success | 1: Not found | 2: Error
+     */
+    public int removeHome(UUID playerUUID, String homeName) {
         Map.Entry<String, Location> home = getHome(playerUUID, homeName);
         if(home != null) {
             if(getAllHomes(playerUUID).remove(home.getKey()) != null) {
-                return ErrorMessage.NO_ERROR;
+                return 0;
             }
             else {
                 Manager.getInstance().sendWarningMessage(getMessagePrefix(),
                         "Home-Remove: Could not remove existing home: " + playerUUID + ": " + home.getKey());
-                return new ErrorMessage("Home couldn't be removed");
+                return 2;
             }
         }
         else {
-            return new ErrorMessage(String.format(HomeConstants.ERROR_HOME_NOT_FOUND, homeName));
+            return 1;
         }
     }
 
@@ -90,15 +87,21 @@ public class HomeManager implements ManagedPlugin, Saveable
         return new ArrayList<>(playerHomes.keySet());
     }
 
-    public ErrorMessage teleportToHome(UUID playerUUID, String homeName) {
+    /**
+     *
+     * @param playerUUID
+     * @param homeName
+     * @return 0: Success | 1: Not found
+     */
+    public int teleportToHome(UUID playerUUID, String homeName) {
         Map.Entry<String, Location> entry = getHome(playerUUID, homeName);
         Player player = Manager.getInstance().getServer().getPlayer(playerUUID);
         if(entry != null && entry.getValue() != null && player != null) {
             player.teleport(entry.getValue());
-            return ErrorMessage.NO_ERROR;
+            return 0;
         }
         else {
-            return new ErrorMessage(String.format(HomeConstants.ERROR_HOME_NOT_FOUND, homeName));
+            return 1;
         }
     }
 
@@ -135,10 +138,10 @@ public class HomeManager implements ManagedPlugin, Saveable
         }
         try {
             saveConfigFile.save(SAVE_FILE);
-            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(HomeConstants.HOMES_SAVED, homes.keySet().size(), homes.entrySet().size()));
+            Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("Homes saved! (P:%d H:%d)", homes.keySet().size(), homes.entrySet().size()));
             return true;
         } catch(Exception e) {
-            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getLocalizedMessage());
             return false;
         }
     }
@@ -148,7 +151,7 @@ public class HomeManager implements ManagedPlugin, Saveable
         try {
             saveConfigFile.load(SAVE_FILE);
         } catch(Exception e) {
-            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getLocalizedMessage());
             return false;
         }
         ConfigurationSection uuidSection = saveConfigFile.getConfigurationSection("");
@@ -161,7 +164,7 @@ public class HomeManager implements ManagedPlugin, Saveable
             }
             homes.put(UUID.fromString(uuid), homeMap);
         }
-        Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format(HomeConstants.HOMES_LOADED, homes.keySet().size(), homes.entrySet().size()));
+        Manager.getInstance().sendInfoMessage(getMessagePrefix(), String.format("Homes loaded! (P:%d H:%d)", homes.keySet().size(), homes.entrySet().size()));
         return true;
     }
 
@@ -173,7 +176,7 @@ public class HomeManager implements ManagedPlugin, Saveable
             Manager.getInstance().getCommand(HomeCommands.CommandStrings.ROOT).setExecutor(hc);
             Manager.getInstance().getCommand(HomeCommands.CommandStrings.ROOT).setTabCompleter(hc);
         } catch(NullPointerException e) {
-            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getLocalizedMessage());
             onDisable();
             return false;
         }
@@ -187,7 +190,7 @@ public class HomeManager implements ManagedPlugin, Saveable
             Manager.getInstance().getCommand(HomeCommands.CommandStrings.ROOT).setExecutor(null);
             Manager.getInstance().getCommand(HomeCommands.CommandStrings.ROOT).setTabCompleter(null);
         } catch(NullPointerException e) {
-            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getMessage());
+            Manager.getInstance().sendErrorMessage(getMessagePrefix(), e.getLocalizedMessage());
         }
     }
 

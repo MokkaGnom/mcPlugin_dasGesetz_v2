@@ -7,16 +7,21 @@ import deathChest.DeathChestManager;
 import farming.EasyFarming;
 import farming.Timber;
 import home.HomeManager;
+import manager.language.LanguageManager;
 import messagePrefix.PrefixManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import other.Messages;
+import other.WelcomeMessages;
 import playerTrophy.PlayerTrophyManager;
 import villagerCreator.VillagerCreatorManager;
 import ping.PingManager;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.*;
 
 /**
@@ -25,14 +30,13 @@ import java.util.*;
 public class Manager extends JavaPlugin
 {
     private static final String JSON_PLUGIN_KEY = "Manager";
-    private static final String LOCALE_JSON_KEY = "Language";
     private static final String MESSAGE_PREFIX = String.format(ManagedPlugin.MESSAGE_PREFIX, "DG-Manager");
     private static Manager instance = null;
 
-    private Locale locale;
     private final ManagerCommands managerCommands;
     private final ManagerEvents managerEvents;
     private final Map<ManagedPlugin, Boolean> plugins;
+    private final LanguageManager languageManager;
 
     /**
      * NICHT BENUTZEN !!!
@@ -40,10 +44,10 @@ public class Manager extends JavaPlugin
      */
     public Manager() {
         assert instance == null;
+        this.languageManager = new LanguageManager();
         this.managerCommands = new ManagerCommands();
         this.managerEvents = new ManagerEvents();
         this.plugins = new HashMap<>();
-        this.locale = Locale.ENGLISH;
     }
 
     public static Manager getInstance() {
@@ -63,7 +67,7 @@ public class Manager extends JavaPlugin
             try {
                 config.addDefault(getConfigEntryPath(JSON_PLUGIN_KEY, pluginEntry.getKey().getName()), pluginEntry.getValue());
             } catch(Exception e) {
-                sendWarningMessage(MESSAGE_PREFIX ,e.getMessage());
+                sendWarningMessage(MESSAGE_PREFIX, e.getMessage());
                 sendInfoMessage(MESSAGE_PREFIX, getConfigEntryPath(JSON_PLUGIN_KEY, pluginEntry.getKey().getName()));
             }
         }
@@ -82,20 +86,23 @@ public class Manager extends JavaPlugin
         this.plugins.put(new Timber(), true);
         this.plugins.put(new HomeManager(), true);
         this.plugins.put(new BlockLoggerManager(), false);
-        this.plugins.put(new Messages(), true);
+        this.plugins.put(new WelcomeMessages(), true);
         this.plugins.put(new PingManager(), true);
         this.plugins.put(new VillagerCreatorManager(), true);
         this.plugins.put(new PrefixManager(), true);
         this.plugins.put(new PlayerTrophyManager(), true);
 
-        sendInfoMessage(MESSAGE_PREFIX, "Enable plugins...");
+        sendInfoMessage(MESSAGE_PREFIX, "Startup...");
 
+        int loadedLanguages = languageManager.loadFromFile();
+        if(loadedLanguages >= 0) {
+            sendInfoMessage(MESSAGE_PREFIX, "Loaded languages for " + loadedLanguages + " sub-plugins");
+        }
         managerCommands.onEnable();
         managerEvents.onEnable();
         createDefaultConfig();
 
-        String key = Objects.requireNonNullElse(this.getConfig().getString(LOCALE_JSON_KEY),"de");
-        this.locale = Locale.forLanguageTag(key);
+        sendInfoMessage(MESSAGE_PREFIX, "Enable plugins...");
 
         Map<ManagedPlugin, Boolean> newPlugins = new HashMap<>();
         for(Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet()) {
@@ -184,16 +191,31 @@ public class Manager extends JavaPlugin
         return this.getConfig().get(path);
     }
 
-    public boolean setConfigEntry(String path, Object value){
-        if(this.getConfigEntry(path) != null){
+    public boolean setConfigEntry(String path, Object value) {
+        if(this.getConfigEntry(path) != null) {
             getConfig().set(path, value);
             return true;
         }
         return false;
     }
 
-    public Locale getLocale() {
-        return locale;
+    public Class<? extends ManagedPlugin> getPluginClassFromName(String subPluginName) {
+        if(this.managerCommands.getName().equalsIgnoreCase(subPluginName)) {
+            return this.managerCommands.getClass();
+        }
+        else if(this.managerEvents.getName().equalsIgnoreCase(subPluginName)) {
+            return this.managerEvents.getClass();
+        }
+        for(Class<? extends ManagedPlugin> plugin : getSubPlugins().keySet().stream().map(ManagedPlugin::getClass).toList()) {
+            if(plugin.getName().equals(subPluginName)) {
+                return plugin;
+            }
+        }
+        return null;
+    }
+
+    public LanguageManager getLanguageManager() {
+        return languageManager;
     }
 
     public void sendErrorMessage(String prefix, String message) {

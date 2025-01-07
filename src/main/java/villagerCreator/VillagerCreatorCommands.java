@@ -30,11 +30,11 @@ public class VillagerCreatorCommands implements TabExecutor
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(!(sender instanceof Player player)) {
-            vcManager.sendMessage(sender, ErrorMessage.NOT_A_PLAYER.message());
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.getMessage());
             return true;
         }
-        if(!vcManager.hasAdminPermission(sender)){
-            vcManager.sendMessage(sender, ErrorMessage.NO_PERMISSION.message());
+        if(!vcManager.hasAdminPermission(sender)) {
+            vcManager.sendMessage(player, ErrorMessage.NO_PERMISSION);
             return true;
         }
 
@@ -42,20 +42,20 @@ public class VillagerCreatorCommands implements TabExecutor
             if(args[0].equalsIgnoreCase(CommandStrings.REMOVE)) {
                 Entity entity = HelperFunctions.getTargetEntity(player.getLocation(), player.getLocation().getDirection(), VillagerCreatorManager.MAX_REMOVE_DISTANCE);
                 if(entity instanceof Villager villager && vcManager.removeCustomFromVillager(villager)) {
-                    vcManager.sendMessage(sender, "Removed");
+                    vcManager.sendMessage(player, "removed");
                 }
                 else {
-                    vcManager.sendMessage(sender, "Invalid target");
+                    vcManager.sendMessage(player, "invalidTarget");
                 }
                 return true;
             }
-            else if(args[0].equalsIgnoreCase("test")){
+            else if(args[0].equalsIgnoreCase("test")) {
 
                 return true;
             }
         }
 
-        vcManager.sendMessage(sender, ErrorMessage.UNKNOWN_SYNTAX.message());
+        vcManager.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
         return false;
     }
 

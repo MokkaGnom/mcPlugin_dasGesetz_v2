@@ -15,13 +15,13 @@ public class WeatherClear implements TabExecutor
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(!CommandsManager.getInstance().hasDefaultUsePermission(sender, this.getClass())) {
-            sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
+        if(!(sender instanceof Player player)) {
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.getMessage());
             return true;
         }
 
-        if(!(sender instanceof Player)) {
-            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.message());
+        if(!CommandsManager.getInstance().hasDefaultUsePermission(sender, this.getClass())) {
+            CommandsManager.getInstance().sendMessage(player, ErrorMessage.NO_PERMISSION);
             return true;
         }
 

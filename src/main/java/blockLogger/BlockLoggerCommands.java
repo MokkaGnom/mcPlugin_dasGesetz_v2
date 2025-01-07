@@ -11,10 +11,6 @@ import java.util.List;
 
 public class BlockLoggerCommands implements TabExecutor
 {
-    public static final String ADDED_MESSAGE = "Added \"%s\": %b";
-    public static final String REMOVED_MESSAGE = "Removed \"%s\": %b";
-    public static final String UNKNOWN_MATERIAL = "Unknown material \"%s\"";
-
     public interface CommandStrings
     {
         String ROOT = "blocklogger";
@@ -33,23 +29,23 @@ public class BlockLoggerCommands implements TabExecutor
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(!(sender instanceof Player)) {
-            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.message());
+        if(!(sender instanceof Player player)) {
+            sender.sendMessage(ErrorMessage.NOT_A_PLAYER.getMessage());
             return true;
         }
 
         if(!blm.hasDefaultUsePermission(sender)) {
-            sender.sendMessage(ErrorMessage.NO_PERMISSION.message());
+            blm.sendMessage(player, ErrorMessage.NO_PERMISSION.getLocalizedMessage());
             return true;
         }
 
         if(args.length == 1 && args[0].equalsIgnoreCase(CommandStrings.LIST)) {
             if(blm.getBlockLoggerMaterials().isEmpty()) {
-                blm.sendMessage(sender, ErrorMessage.EMPTY_LIST.message());
+                blm.sendMessage(player, ErrorMessage.EMPTY_LIST);
             }
             else {
                 for(Material material : blm.getBlockLoggerMaterials()) {
-                    blm.sendMessage(sender, material.name());
+                    blm.sendMessageDirect(player, material.name());
                 }
             }
             return true;
@@ -57,25 +53,25 @@ public class BlockLoggerCommands implements TabExecutor
         else if(args.length == 2) {
             Material material = Material.getMaterial(args[1].toUpperCase());
             if(material == null) {
-                blm.sendMessage(sender, String.format(UNKNOWN_MATERIAL, args[1]));
+                blm.sendMessageFormat(player, "unknownMaterial", args[1]);
                 return true;
             }
 
             if(args[0].equalsIgnoreCase(CommandStrings.ADD)) {
-                blm.sendMessage(sender, String.format(ADDED_MESSAGE, args[1], blm.addBlockLogger(material)));
+                blm.sendMessageFormat(player, "added", args[1], blm.addBlockLogger(material));
                 return true;
             }
             else if(args[0].equalsIgnoreCase(CommandStrings.REMOVE)) {
-                blm.sendMessage(sender, String.format(REMOVED_MESSAGE, args[1], blm.removeBlockLogger(material)));
+                blm.sendMessageFormat(player, "removed", args[1], blm.removeBlockLogger(material));
                 return true;
             }
             else {
-                sender.sendMessage(ErrorMessage.UNKNOWN_ARGUMENT.message());
+                blm.sendMessage(player, ErrorMessage.UNKNOWN_ARGUMENT);
                 return false;
             }
         }
         else {
-            sender.sendMessage(ErrorMessage.UNKNOWN_SYNTAX.message());
+            blm.sendMessage(player, ErrorMessage.UNKNOWN_SYNTAX);
             return false;
         }
     }
