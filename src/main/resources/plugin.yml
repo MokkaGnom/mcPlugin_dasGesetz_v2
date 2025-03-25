@@ -1,6 +1,6 @@
 main: manager.Manager
 name: dasGesetz
-version: 3.8.0
+version: 3.8.1
 api-version: 1.21
 author: MokkaGnom
 description: Das Gesetz. BlockLock, BlockLogger, Admin-Commands, DeathChest, Timber, EasyFarming, Home, Message-Prefix, Ping, Player-Trophy, Villager/Baby creator

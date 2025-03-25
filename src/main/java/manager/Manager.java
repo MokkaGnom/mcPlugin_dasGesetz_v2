@@ -14,15 +14,13 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import other.WelcomeMessages;
+import ping.PingManager;
 import playerTrophy.PlayerTrophyManager;
 import villagerCreator.VillagerCreatorManager;
-import ping.PingManager;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Main-Class
