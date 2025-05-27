@@ -1,6 +1,6 @@
 main: manager.Manager
 name: dasGesetz
-version: 3.8.0
+version: 3.9.0
 api-version: 1.21
 author: MokkaGnom
 description: Das Gesetz. BlockLock, BlockLogger, Admin-Commands, DeathChest, Timber, EasyFarming, Home, Message-Prefix, Ping, Player-Trophy, Villager/Baby creator
@@ -129,3 +129,9 @@ permissions:
   dg.getPingPermission:
     description: Allows a player to use the getPing command
     default: true
+  dg.ghastStatPermission:
+    description: Allows a player to be tracked by ghast-stats
+    default: true
+  dg.ghastStatAdminPermission:
+    description: Allows a player to use ghast-stats admin commands
+    default: op

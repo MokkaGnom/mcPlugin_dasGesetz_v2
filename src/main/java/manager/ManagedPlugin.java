@@ -35,11 +35,11 @@ public interface ManagedPlugin
     /*-------------------------- Message --------------------------*/
 
     default void sendErrorMessage(CommandSender sender, ErrorMessage errorMessage) {
-        sender.sendMessage(getMessageColorPrefix() + errorMessage.getMessage());
+        sender.sendMessage(getFormatedMessage(errorMessage.getMessage()));
     }
 
     default void sendMessageDirect(Player player, String message) {
-        player.sendMessage(getMessageColorPrefix() + message);
+        player.sendMessage(getFormatedMessage(message));
     }
 
     default void sendMessageFormat(Player player, LocalizedString message, Object... args) {
@@ -72,6 +72,14 @@ public interface ManagedPlugin
         return ChatColor.GRAY + "[" + getMessageColor() + getName() + ChatColor.GRAY + "] " + ChatColor.WHITE;
     }
 
+    default String getFormatedMessage(String message){
+        return getMessageColorPrefix() + message;
+    }
+
+    default String getFormatedMessage(Player player, LocalizedString message){
+        return getFormatedMessage(message.getOrDefault(player.getLocale()));
+    }
+
     /*-------------------------- Permission --------------------------*/
 
     List<String> getPermissions();
@@ -93,5 +101,9 @@ public interface ManagedPlugin
 
     default LocalizedString getLocalizedString(String key) {
         return Manager.getInstance().getLanguageManager().getLocalizedString(this.getClass(), key);
+    }
+
+    default String getLocalizedString(String key, Player p){
+        return getLocalizedString(key).getOrDefault(p.getLocale());
     }
 }

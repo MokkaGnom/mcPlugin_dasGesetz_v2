@@ -11,13 +11,15 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
-public class LanguageManager
-{
+public class LanguageManager {
     public static final String PREFIX = "LanguageManager";
     public static final String LANGUAGE_FILE_NAME = "locale.yml";
     private final Map<Class<? extends ManagedPlugin>, Map<String, LocalizedString>> pluginLocalizedStringsMap;
+
+    public static final LocalizedString DEFAULT_STRING = new LocalizedString(Map.of(Locale.ENGLISH, "ERROR: STRING NOT FOUND (%s)"));
 
     public LanguageManager() {
         this.pluginLocalizedStringsMap = new HashMap<>();
@@ -68,7 +70,7 @@ public class LanguageManager
     }
 
     public LocalizedString getLocalizedString(Class<? extends ManagedPlugin> pluginClass, String key) {
-        return pluginLocalizedStringsMap.get(pluginClass).get(key);
+        return pluginLocalizedStringsMap.get(pluginClass).getOrDefault(key, DEFAULT_STRING);
     }
 
     public Map<String, LocalizedString> getPluginLocalizedStrings(String subPluginName) {

@@ -14,21 +14,18 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import other.WelcomeMessages;
+import ping.PingManager;
 import playerTrophy.PlayerTrophyManager;
 import villagerCreator.VillagerCreatorManager;
-import ping.PingManager;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Main-Class
  */
-public class Manager extends JavaPlugin
-{
+public class Manager extends JavaPlugin {
     private static final String JSON_PLUGIN_KEY = "Manager";
     private static final String MESSAGE_PREFIX = String.format(ManagedPlugin.MESSAGE_PREFIX, "DG-Manager");
     private static Manager instance = null;
@@ -79,6 +76,9 @@ public class Manager extends JavaPlugin
     @Override
     public void onEnable() {
         instance = this;
+
+        sendInfoMessage(MESSAGE_PREFIX, "Startup...");
+
         this.plugins.put(new BlockLockManager(), true);
         this.plugins.put(new CommandsManager(), true);
         this.plugins.put(new DeathChestManager(), true);
@@ -91,8 +91,6 @@ public class Manager extends JavaPlugin
         this.plugins.put(new VillagerCreatorManager(), true);
         this.plugins.put(new PrefixManager(), true);
         this.plugins.put(new PlayerTrophyManager(), true);
-
-        sendInfoMessage(MESSAGE_PREFIX, "Startup...");
 
         int loadedLanguages = languageManager.loadFromFile();
         if(loadedLanguages >= 0) {

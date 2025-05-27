@@ -34,71 +34,100 @@ BlockLock:
     de: "%s konnte nicht hinzugefügt werden (lokal)"
   removeLocalFriend:
     en: "%s removed (local)"
+    de: "%s entfernt (lokal)"
   removeLocalFriendFailed:
     en: "Couldn't remove %s (local)"
+    de: "%s konnte nicht entfernt werden (lokal)"
   addGlobalFriend:
     en: "%s added (global)"
+    de: "%s hinzugefügt (global)"
   addGlobalFriendFailed:
     en: "Couldn't add %s (global)"
+    de: "%s konnte nicht hinzugefügt werden (global)"
   removeGlobalFriend:
     en: "%s removed (global)"
+    de: "%s entfernt (global)"
   removeGlobalFriendFailed:
     en: "Couldn't remove %s (global)"
+    de: "%s konnte nicht entfernt werden (global)"
   noPlayerFound:
     en: "Couldn't find player %s"
+    de: "Spieler %s nicht gefunden"
   blockNotSupported:
     en: "Block not supported!"
+    de: "Block nicht unterstützt!"
   blockAlreadyLocked:
     en: "%s is already locked!"
+    de: "%s ist bereits verschlossen"
   blockLocked:
     en: "%s locked!"
+    de: "%s verschlossen!"
   blockUnlocked:
     en: "%s unlocked"
+    de: "%s geöffnet"
   blockNotLocked:
     en: "Block is not locked!"
+    de: "Block ist nicht verschlossen!"
 BlockLogger:
   unknownMaterial:
     en: "Unknown material \"%s\""
+    de: "Unbekanntes Material \"%s\""
   added:
     en: "Added \"%s\": %b"
+    de: "Hinzugefügt \"%s\": %b"
   removed:
     en: "Removed \"%s\": %b"
+    de: "Entfernt \"%s\": %b"
 Commands:
   playerNotFound:
     en: "Player \"%s\" not found"
+    de: "Spieler \"%s\" nicht gefunden"
   coords:
     en: "Player \"%s\" is at: %s"
+    de: "Spieler \"%s\" ist bei: %s"
   getPing:
     en: "%s ms"
 DeathChest:
   infoForPlayer:
     en: "Position(X: %s, Y: %s, Z: %s) - TTL(%ss)"
+    de: "Position(X: %s, Y: %s, Z: %s) - TTL(%ss)"
   created:
     en: "Created at (X: %s, Y: %s, Z: %s) T: %ss"
+    de: "Erstellt bei (X: %s, Y: %s, Z: %s) T: %ss"
   collected:
     en: "Collected!"
+    de: "Eingesammelt!"
   steal:
-    en: "\"%s\" tried to open your DeathChest at: (X: %s, Y: %s, Z: %s)"
+    en: "%s tried to open your DeathChest at: (X: %s, Y: %s, Z: %s)"
+    de: "%s hat versucht deine DeathChest bei: (X: %s, Y: %s, Z: %s) zu öffnen"
   noDeathChest:
     en: "Not a DeathChest"
+    de: "Keine DeathChest"
   noDeathChestsAvailable:
     en: "No DeathChest available"
     de: "Keine DeathChests vorhanden"
 Homes:
   homeExists:
     en: "Home already exists"
+    de: "Haus existiert bereits"
   homeNotFound:
     en: "Home not found"
+    de: "Haus nicht gefunden"
   maxHomes:
     en: "Reached maximum amount of homes"
+    de: "Maximale Anzahl an Häusern erreicht"
   noHomes:
     en: "No homes found"
+    de: "Kein Haus gefunden"
   added:
     en: "Home \"%s\" added"
+    de: "Haus \"%s\" hinzugefügt"
   removed:
     en: "Home \"%s\" removed"
+    de: "Haus \"%s\" entfernt"
   tp:
     en: "Teleported to home \"%s\""
+    de: "Zu Haus \"%s\" teleportiert"
 MessagePrefix:
   removed:
     en: "Prefix removed"
@@ -117,26 +146,33 @@ MessagePrefix:
     de: "Prefix gelöscht"
   addedTo:
     en: "Prefix added to \"%s\""
+    de: "Prefix hinzugefügt zu \"%s\""
   removedFrom:
     en: "Prefix removed from \"%s\""
+    de: "Prefix entfernt von \"%s\""
   notFoundP:
     en: "Player or prefix not found"
+    de: "Spieler oder Prefix nicht gefunden"
   created:
     en: "Prefix created"
     de: "Prefix erstellt"
 ping:
   pingAt:
     en: "You pinged at %s, %s, %s"
+    de: "Du hast bei %s, %s, %s, gepingt"
   onCooldown:
     en: "On cooldown. Please wait for %ds"
+    de: "Bitte warte für %ds"
   changed:
     en: "%sSuccessfully changed color"
+    de: "%sFarbe wurde gewechselt"
 villagerCreator:
   removed:
     en: "Removed"
     de: "Entfernt"
   invalidTarget:
     en: "Invalid target"
+    de: "Ungültiges Ziel"
 DG-Manager:
   pluginEnabled:
     en: "Plugin \"%s\" was enabled"
@@ -146,29 +182,41 @@ DG-Manager:
     de: "Plugin \"%s\" wurde deaktiviert"
   permissionAddedTo:
     en: "Permission \"%s\" added to \"%s\""
+    de: "Berechtigung \"%s\" zu \"%s\" hinzugefügt"
   permissionRemovedFrom:
     en: "Permission \"%s\" removed from \"%s\""
-  unknownPermissiom:
+    de: "Berechtigung \"%s\" von \"%s\" entfernt"
+  unknownPermission:
     en: "Unknown permission!"
     de: "Unbekannte Berechtigung!"
   setConfigSuccess:
     en: "Successful!"
+    de: "Erfolgreich!"
   pathNotFound:
     en: "Path not found!"
+    de: "Pfad wurde nicht gefunden!"
 ErrorMessages:
   UNKNOWN_ERROR:
     en: "Unknown error!"
+    de: "Unbekannter Fehler!"
   UNKNOWN_SYNTAX:
     en: "Unknown syntax!"
+    de: "Unbekannter Syntax!"
   UNKNOWN_ARGUMENT:
     en: "Unknown argument!"
+    de: "Unbekanntes Argument!"
   UNKNOWN_PLUGIN:
     en: "Unknown plugin!"
+    de: "Unbekanntes Plugin!"
   NO_PERMISSION:
     en: "No permission!"
+    de: "Keine Berechtigung!"
   NOT_A_PLAYER:
     en: "You are not a player!"
+    de: "Du bist kein Spieler!"
   PLAYER_NOT_FOUND:
     en: "Player not found!"
+    de: "Spieler nicht gefunden!"
   EMPTY_LIST:
     en: "Empty list!"
+    de: "Leere Liste!"
