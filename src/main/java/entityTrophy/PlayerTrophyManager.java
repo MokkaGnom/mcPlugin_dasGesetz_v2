@@ -1,4 +1,4 @@
-package playerTrophy;
+package entityTrophy;
 
 import manager.ManagedPlugin;
 import manager.Manager;
@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+@Deprecated(forRemoval = true)
 public class PlayerTrophyManager implements Listener, ManagedPlugin
 {
     public static final String PROBABILITY_JSON_KEY = "PlayerTrophy.DropProbability";

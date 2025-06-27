@@ -8,17 +8,17 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldSaveEvent;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-public class ManagerEvents implements Listener, ManagedPlugin
-{
+public class ManagerEvents implements Listener, ManagedPlugin {
+
     @EventHandler
     public void onWorldSave(WorldSaveEvent event) {
+        Set<Saveable> saveables = Manager.getInstance().getSubPlugins().keySet().stream().filter(p -> p instanceof Saveable).map(p -> (Saveable) p).collect(Collectors.toSet());
         if(event.getWorld().getName().equals(Bukkit.getWorlds().getFirst().getName())) {
-            for(ManagedPlugin plugin : Manager.getInstance().getSubPlugins().keySet()) {
-                if(plugin instanceof Saveable saveable) {
-                    saveable.saveToFile();
-                }
-            }
+            Manager.getInstance().sendInfoMessage(this, String.format("Saving %s sub-plugins...", saveables.size()));
+            saveables.forEach(Saveable::saveToFile);
         }
     }
 

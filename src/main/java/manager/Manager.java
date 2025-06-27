@@ -4,23 +4,29 @@ import blockLock.BlockLockManager;
 import blockLogger.BlockLoggerManager;
 import commands.CommandsManager;
 import deathChest.DeathChestManager;
+import entityTrophy.EntityTrophyManager;
 import farming.EasyFarming;
 import farming.Timber;
 import home.HomeManager;
 import manager.language.LanguageManager;
 import messagePrefix.PrefixManager;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.Configuration;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import other.WelcomeMessages;
 import ping.PingManager;
-import playerTrophy.PlayerTrophyManager;
+import entityTrophy.PlayerTrophyManager;
+import utility.ConfigFile;
 import villagerCreator.VillagerCreatorManager;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.annotation.concurrent.ThreadSafe;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Main-Class
@@ -33,6 +39,7 @@ public class Manager extends JavaPlugin {
     private final ManagerCommands managerCommands;
     private final ManagerEvents managerEvents;
     private final Map<ManagedPlugin, Boolean> plugins;
+    private final Map<String, ConfigFile> configFiles;
     private final LanguageManager languageManager;
 
     /**
@@ -45,9 +52,10 @@ public class Manager extends JavaPlugin {
         this.managerCommands = new ManagerCommands();
         this.managerEvents = new ManagerEvents();
         this.plugins = new HashMap<>();
+        this.configFiles = new HashMap<>();
     }
 
-    public static Manager getInstance() {
+    public static synchronized Manager getInstance() {
         return instance;
     }
 
@@ -69,8 +77,8 @@ public class Manager extends JavaPlugin {
             }
         }
 
+        saveDefaultConfig();
         config.options().copyDefaults(true);
-        this.saveConfig();
     }
 
     @Override
@@ -90,7 +98,7 @@ public class Manager extends JavaPlugin {
         this.plugins.put(new PingManager(), true);
         this.plugins.put(new VillagerCreatorManager(), true);
         this.plugins.put(new PrefixManager(), true);
-        this.plugins.put(new PlayerTrophyManager(), true);
+        this.plugins.put(new EntityTrophyManager(), true);
 
         int loadedLanguages = languageManager.loadFromFile();
         if(loadedLanguages >= 0) {
@@ -122,17 +130,23 @@ public class Manager extends JavaPlugin {
         managerCommands.onDisable();
         managerEvents.onDisable();
 
+        sendInfoMessage(MESSAGE_PREFIX, "Saving configs...");
+        try {
+            this.saveConfig();
+            configFiles.values().forEach(ConfigFile::save);
+        } catch(Exception e) {
+            sendErrorMessage(MESSAGE_PREFIX, e.getLocalizedMessage());
+        }
+
+        sendInfoMessage(MESSAGE_PREFIX, "Disabling plugins...");
         for(Map.Entry<ManagedPlugin, Boolean> pluginEntry : plugins.entrySet()) {
             if(pluginEntry.getValue()) {
                 pluginEntry.getKey().onDisable();
             }
         }
 
-        try {
-            this.saveConfig();
-        } catch(Exception e) {
-            sendWarningMessage(MESSAGE_PREFIX, e.getMessage());
-        }
+        sendInfoMessage(MESSAGE_PREFIX, "Plugins disabled");
+        sendInfoMessage(MESSAGE_PREFIX, "Byeee...");
     }
 
     public void enablePlugin(ManagedPlugin plugin) {
@@ -168,10 +182,18 @@ public class Manager extends JavaPlugin {
         return null;
     }
 
+    public ConfigurationSection getConfigSection(ManagedPlugin p) {
+        return Objects.requireNonNullElse(
+                getConfig().getConfigurationSection(p.getConfigKey()),
+                getConfig().createSection(p.getConfigKey())
+        );
+    }
+
     public Map<ManagedPlugin, Boolean> getSubPlugins() {
         return plugins;
     }
 
+    @Deprecated(forRemoval = true)
     public static String getConfigEntryPath(String... path) {
         StringBuilder finalPath = new StringBuilder();
         for(String s : path) {
@@ -181,10 +203,12 @@ public class Manager extends JavaPlugin {
         return finalPath.substring(0, finalPath.toString().length() - 1);
     }
 
+    @Deprecated(forRemoval = true)
     public Object getConfigEntry(String... path) {
         return getConfig().getString(getConfigEntryPath(path));
     }
 
+    @Deprecated(forRemoval = true)
     public Object getConfigEntry(String path) {
         return this.getConfig().get(path);
     }
@@ -195,6 +219,30 @@ public class Manager extends JavaPlugin {
             return true;
         }
         return false;
+    }
+
+    public FileConfiguration createConfigFile(String name) {
+        ConfigFile configFile = configFiles.get(name);
+        if(configFile != null) return configFile.config();
+
+        File file = new File(Manager.getInstance().getDataFolder(), name + ".yml");
+        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+        /*if(file.exists()){
+            try {
+                config.load(file);
+            } catch(Exception e) {
+                sendErrorMessage(MESSAGE_PREFIX, String.format("Error creating configFile \"%s\": %s", name, e.getLocalizedMessage()));
+                return null;
+            }
+        }*/
+
+        configFiles.put(name, new ConfigFile(config, file));
+        return config;
+    }
+
+    public boolean saveConfigFile(String name) {
+        ConfigFile configFile = configFiles.get(name);
+        return configFile != null && configFile.save();
     }
 
     public Class<? extends ManagedPlugin> getPluginClassFromName(String subPluginName) {
@@ -216,14 +264,29 @@ public class Manager extends JavaPlugin {
         return languageManager;
     }
 
+    public void sendErrorMessage(ManagedPlugin subPlugin, String message) {
+        Bukkit.getLogger().severe(subPlugin.getMessagePrefix() + message);
+    }
+
+    public void sendWarningMessage(ManagedPlugin subPlugin, String message) {
+        Bukkit.getLogger().warning(subPlugin.getMessagePrefix() + message);
+    }
+
+    public void sendInfoMessage(ManagedPlugin subPlugin, String message) {
+        Bukkit.getLogger().info(subPlugin.getMessagePrefix() + message);
+    }
+
+    @Deprecated(forRemoval = true)
     public void sendErrorMessage(String prefix, String message) {
         Bukkit.getLogger().severe(prefix + message);
     }
 
+    @Deprecated(forRemoval = true)
     public void sendWarningMessage(String prefix, String message) {
         Bukkit.getLogger().warning(prefix + message);
     }
 
+    @Deprecated(forRemoval = true)
     public void sendInfoMessage(String prefix, String message) {
         Bukkit.getLogger().info(prefix + message);
     }

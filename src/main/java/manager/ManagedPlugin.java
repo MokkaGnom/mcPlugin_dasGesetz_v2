@@ -3,6 +3,7 @@ package manager;
 import manager.language.LocalizedString;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permissible;
@@ -10,8 +11,7 @@ import utility.ErrorMessage;
 
 import java.util.List;
 
-public interface ManagedPlugin
-{
+public interface ManagedPlugin {
     List<String> COMMAND_NO_OPTION_AVAILABLE = List.of("");
     List<String> DISABLE_STRINGS = List.of("0", "disable", "false");
     List<String> ENABLE_STRINGS = List.of("1", "enable", "true");
@@ -30,6 +30,37 @@ public interface ManagedPlugin
     String getName();
 
     default void createDefaultConfig(FileConfiguration config) {
+    }
+
+    default String getConfigKey() {
+        return getName();
+    }
+
+    default ConfigurationSection getConfigurationSection(String key) throws NullPointerException {
+        return Manager.getInstance()
+                .getConfigSection(this)
+                .getConfigurationSection(key);
+    }
+
+    default <T> T getConfigurationValue(String key, Class<T> clazz) {
+        return Manager.getInstance()
+                .getConfigSection(this)
+                .getObject(key, clazz);
+    }
+
+    default String getConfigurationValueAsString(String key) {
+        return Manager.getInstance()
+                .getConfigSection(this)
+                .getString(key);
+    }
+
+    default String getConfigPath(String... keys) {
+        StringBuilder s = new StringBuilder();
+        for(String k : keys) {
+            s.append(k);
+            s.append(".");
+        }
+        return s.deleteCharAt(s.length()-1).toString();
     }
 
     /*-------------------------- Message --------------------------*/
@@ -72,11 +103,11 @@ public interface ManagedPlugin
         return ChatColor.GRAY + "[" + getMessageColor() + getName() + ChatColor.GRAY + "] " + ChatColor.WHITE;
     }
 
-    default String getFormatedMessage(String message){
+    default String getFormatedMessage(String message) {
         return getMessageColorPrefix() + message;
     }
 
-    default String getFormatedMessage(Player player, LocalizedString message){
+    default String getFormatedMessage(Player player, LocalizedString message) {
         return getFormatedMessage(message.getOrDefault(player.getLocale()));
     }
 
@@ -103,7 +134,7 @@ public interface ManagedPlugin
         return Manager.getInstance().getLanguageManager().getLocalizedString(this.getClass(), key);
     }
 
-    default String getLocalizedString(String key, Player p){
+    default String getLocalizedString(String key, Player p) {
         return getLocalizedString(key).getOrDefault(p.getLocale());
     }
 }
