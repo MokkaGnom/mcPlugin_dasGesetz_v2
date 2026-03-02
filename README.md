@@ -3,7 +3,7 @@ mc-Plugin "das Gesetz" für Version 1.21
 
 ----------------------
 Das Gesetz
-by MokkaGnom ©2023-2025
+by MokkaGnom ©2023-2026
 ----------------------
 
 "dasGesetz" ist ein Minecraft Bukkit Plugin, welches mehrere Sub-Plugins beinhaltet.
